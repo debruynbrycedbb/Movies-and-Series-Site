@@ -92,6 +92,11 @@ const DB = (() => {
       return unwrap(await client().rpc('change_pin', { p_old: oldPin, p_new: newPin }));
     },
 
+    /** Deletes your account and everything on your list, for good. */
+    async deleteAccount(pin) {
+      return unwrap(await client().rpc('delete_account', { p_pin: pin }));
+    },
+
     async members() {
       return unwrap(await client().from('profiles')
         .select('id, username, created_at').order('username'));

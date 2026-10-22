@@ -74,6 +74,11 @@
   setTab(location.hash === '#join' ? 'join' : 'in', false);
   window.addEventListener('hashchange', () => setTab(location.hash === '#join' ? 'join' : 'in', true));
 
+  if (new URLSearchParams(location.search).has('deleted')) {
+    show('Your account has been deleted, along with everything on your list.', 'ok');
+    history.replaceState(null, '', 'login.html');
+  }
+
   /* ---------- show / hide PIN ---------- */
 
   document.querySelectorAll('.reveal').forEach(btn => {

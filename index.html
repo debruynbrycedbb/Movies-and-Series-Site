@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 </head>
 <body>
 
@@ -275,10 +275,58 @@
         <button class="btn btn-ghost" id="refBtn">Refresh</button>
       </div>
 
+      <h3 class="panel-sub danger-sub">Danger zone</h3>
+
+      <div class="data-row">
+        <div>
+          <h4>Delete my account</h4>
+          <p>Removes your name, PIN, list, ratings and watch dates from the site for good.
+             Other members won't see any of it any more.</p>
+        </div>
+        <button class="btn btn-ghost danger" id="delBtn">Delete…</button>
+      </div>
+
       <div class="callout">
         <b>Saved to your account:</b> ratings, watch dates and your list follow your name, so
         they're the same on your phone and your computer. Other members can see your list but
         only you can change it.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Delete account - confirm ============ -->
+<div class="overlay" id="delOverlay">
+  <div class="modal del-modal" role="alertdialog" aria-modal="true" aria-labelledby="delTitle" aria-describedby="delWhat">
+    <button class="modal-close" id="delClose" aria-label="Close">&times;</button>
+    <div class="panel-body">
+      <div class="del-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
+      </div>
+      <h2 id="delTitle">Delete your account?</h2>
+      <div id="delWhat">
+        <p>This permanently removes, for every member:</p>
+        <ul class="del-list">
+          <li>your username and PIN</li>
+          <li>every film and series on your list, with your ratings</li>
+          <li>all your watch dates</li>
+        </ul>
+        <p class="del-warn">It can't be undone. Export a copy first if you might want it later.</p>
+      </div>
+
+      <label class="del-field">
+        <span>Type <b id="delName"></b> to confirm</span>
+        <input id="delUser" autocomplete="off" autocapitalize="none" spellcheck="false">
+      </label>
+      <label class="del-field">
+        <span>Your PIN</span>
+        <input id="delPin" type="password" inputmode="numeric" autocomplete="current-password">
+      </label>
+      <div class="del-msg" id="delMsg" role="alert" hidden></div>
+
+      <div class="del-actions">
+        <button class="btn btn-ghost" id="delCancel">Keep my account</button>
+        <button class="btn btn-danger" id="delGo" disabled>Delete forever</button>
       </div>
     </div>
   </div>
@@ -304,8 +352,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=16"></script>
-<script src="db.js?v=16"></script>
-<script src="boot.js?v=16" data-kind="movie" data-scripts="core.js library.js"></script>
+<script src="config.js?v=17"></script>
+<script src="db.js?v=17"></script>
+<script src="boot.js?v=17" data-kind="movie" data-scripts="core.js library.js"></script>
 </body>
 </html>

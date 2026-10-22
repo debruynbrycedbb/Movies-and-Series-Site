@@ -634,6 +634,10 @@ function init() {
 
   /* --- keyboard --- */
   document.addEventListener('keydown', e => {
+    if ($('#delOverlay').classList.contains('open')) {
+      if (e.key === 'Escape') $('#delCancel').click();
+      return;
+    }
     if (addOverlay.classList.contains('open')) {
       if (e.key === 'Escape') closeAdd();
       return;
@@ -691,6 +695,55 @@ function init() {
         toast('PIN changed');
       } else toast(res === 'wrong' ? "That isn't your current PIN" : 'Could not change it (' + res + ')');
     } catch (e) { toast(e.message || 'Could not change it'); }
+  });
+
+  /* --- delete account --- */
+  const delOverlay = $('#delOverlay');
+  const delReady = () => {
+    $('#delGo').disabled = !($('#delUser').value.trim().toLowerCase() === B.me.username && $('#delPin').value.length >= 4);
+  };
+  const closeDel = () => {
+    delOverlay.classList.remove('open');
+    $('#delUser').value = ''; $('#delPin').value = '';
+    $('#delMsg').hidden = true;
+    delReady();
+  };
+  $('#delName').textContent = B.me.username;
+  $('#delBtn').addEventListener('click', () => {
+    dataOverlay.classList.remove('open');
+    delOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => $('#delUser').focus(), 50);
+  });
+  $('#delUser').addEventListener('input', delReady);
+  $('#delPin').addEventListener('input', delReady);
+  [$('#delClose'), $('#delCancel')].forEach(b => b.addEventListener('click', () => {
+    closeDel();
+    document.body.style.overflow = '';
+  }));
+  delOverlay.addEventListener('mousedown', e => { if (e.target === delOverlay) { closeDel(); document.body.style.overflow = ''; } });
+  $('#delPin').addEventListener('keydown', e => { if (e.key === 'Enter' && !$('#delGo').disabled) $('#delGo').click(); });
+  $('#delGo').addEventListener('click', async () => {
+    const go = $('#delGo');
+    go.disabled = true;
+    go.textContent = 'Deleting…';
+    const say = t => { $('#delMsg').textContent = t; $('#delMsg').hidden = false; };
+    try {
+      const res = await DB.deleteAccount($('#delPin').value);
+      if (res === 'ok') {
+        location.replace('login.html?deleted=1');
+        return;
+      }
+      say({ wrong: "That PIN isn't right.",
+            locked: 'Too many wrong PINs. Try again in 15 minutes.',
+            not_member: "You're not signed in any more. Reload the page and sign in." }[res]
+          || 'Something went wrong (' + res + ').');
+      if (res === 'wrong') { $('#delPin').value = ''; $('#delPin').focus(); }
+    } catch (e) {
+      say("Couldn't reach the database — nothing was deleted. Try again.");
+    }
+    go.textContent = 'Delete forever';
+    delReady();
   });
 
   $('#outBtn').addEventListener('click', async () => {

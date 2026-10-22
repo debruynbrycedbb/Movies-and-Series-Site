@@ -248,6 +248,43 @@ begin
 end $$;
 
 
+-- Delete your own account. Needs your PIN (wrong PINs count towards the
+-- same lockout as signing in). Removes your profile, PIN, list, ratings
+-- and watch dates, plus any catalogue titles that were only ever on your
+-- list. Titles other members also have stay on THEIR lists.
+create or replace function public.delete_account(p_pin text) returns text
+language plpgsql security definer set search_path = '' as $$
+declare
+  pid uuid := public.current_profile_id();
+  u   text;
+  h   text;
+begin
+  if pid is null then return 'not_member'; end if;
+
+  select p.username, c.pin_hash into u, h
+  from public.profiles p join app_private.credentials c on c.profile_id = p.id
+  where p.id = pid;
+
+  if app_private.too_many('login', u, 10, interval '15 minutes') then return 'locked'; end if;
+  if h is null or h <> extensions.crypt(coalesce(p_pin, ''), h) then
+    insert into app_private.attempts (kind, subject, ok) values ('login', u, false);
+    return 'wrong';
+  end if;
+
+  -- titles nobody else has on their list
+  delete from public.titles t
+   where t.id in (select ut.title_id from public.user_titles ut where ut.user_id = pid)
+     and not exists (select 1 from public.user_titles o
+                     where o.title_id = t.id and o.user_id <> pid);
+
+  -- everything else hangs off the profile and goes with it:
+  -- list, ratings, watch dates, PIN and signed-in browsers
+  delete from public.profiles where id = pid;
+  delete from app_private.attempts a where a.kind = 'login' and a.subject = u;
+  return 'ok';
+end $$;
+
+
 -- ---------------------------------------------------------------------
 --  Adding titles to the shared catalogue
 --  Takes a list, returns the catalogue id for each one in order. A title
@@ -331,12 +368,12 @@ revoke execute on function
   public.current_profile_id(), public.is_member(), public.me(),
   public.check_family_code(text), public.register(text, text, text),
   public.login(text, text), public.logout(), public.change_pin(text, text),
-  public.upsert_titles(jsonb)
+  public.delete_account(text), public.upsert_titles(jsonb)
 from public, anon;
 grant execute on function
   public.current_profile_id(), public.is_member(), public.me(),
   public.register(text, text, text), public.login(text, text), public.logout(),
-  public.change_pin(text, text), public.upsert_titles(jsonb)
+  public.change_pin(text, text), public.delete_account(text), public.upsert_titles(jsonb)
 to authenticated;
 
 drop policy if exists "members read profiles" on public.profiles;

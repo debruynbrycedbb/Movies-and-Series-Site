@@ -50,7 +50,7 @@ in a public website.
 ### 4. Upload the files to GitHub
 
 Replace everything in your repository with the files in this zip. Every page now loads
-its files with a version tag (`?v=16`), so browsers pick up the new copies straight away
+its files with a version tag (`?v=17`), so browsers pick up the new copies straight away
 instead of showing an old cached one. The images folder
 stays as it is, so keep any posters you've already uploaded.
 
@@ -141,6 +141,7 @@ The ⚙ button on the Movies and Series pages lets you:
 
 - change your PIN
 - sign out
+- delete your account (asks you to type your username and PIN first)
 - export a copy of a list
 - bring in old ratings
 - test or refresh posters
@@ -148,6 +149,20 @@ The ⚙ button on the Movies and Series pages lets you:
 ---
 
 ## Looking after the site
+
+### Deleting an account
+
+Any member can delete their own account under **⚙ → Danger zone → Delete my account**.
+They type their username and PIN to confirm. That removes:
+
+- their name and PIN
+- their whole list, with ratings and watch dates
+- any titles nobody else has on their list
+
+Other members' lists aren't touched. It can't be undone.
+
+**After uploading v17, run `setup.sql` again once** (SQL Editor → paste → Run). That
+adds the database function the delete button uses. Nothing existing is changed.
 
 ### Forgotten PIN
 

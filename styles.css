@@ -1930,6 +1930,7 @@ body.saving #dataBtn { border-color: rgba(94,224,255,.5); }
 }
 .add-detail { display: grid; grid-template-columns: 120px 1fr; gap: 18px; }
 .add-detail-poster {
+  position: relative;            /* keeps the no-poster tile inside this box */
   aspect-ratio: 2/3;
   border-radius: var(--r-sm);
   overflow: hidden;
@@ -2528,4 +2529,61 @@ body.saving #dataBtn { border-color: rgba(94,224,255,.5); }
   .seen-head span:nth-child(3) { display: none; }
   .seen-row .cnt { font-size: 10.5px; }
   .seen-row .cnt b { font-size: 15px; display: block; line-height: 1.1; }
+}
+
+/* ============================================================
+   DELETE ACCOUNT
+   ============================================================ */
+
+.panel-sub.danger-sub { color: #f06d6d; }
+
+.btn-danger {
+  background: #e05555;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(224,85,85,.25);
+}
+.btn-danger:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-danger:disabled { background: var(--surface-3); color: var(--dim); box-shadow: none; }
+
+.del-modal { max-width: 460px; }
+.del-modal .panel-body { padding-top: 30px; }
+.del-icon {
+  width: 46px; height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  margin-bottom: 14px;
+  background: rgba(240,109,109,.12);
+  border: 1px solid rgba(240,109,109,.3);
+  color: #f06d6d;
+}
+.del-icon svg { width: 22px; height: 22px; }
+.del-modal #delWhat p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
+.del-list { margin: 0 0 12px; padding-left: 18px; color: var(--text); font-size: 13.5px; line-height: 1.7; }
+#delWhat .del-warn { color: #f6a3a3; }
+.del-field { display: block; margin-top: 14px; }
+.del-field span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+.del-field b { color: var(--text); font-family: var(--font-mono); font-weight: 700; }
+.del-field input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+}
+.del-field input:focus { outline: none; border-color: #f06d6d; box-shadow: 0 0 0 3px rgba(240,109,109,.14); }
+.del-msg {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  background: rgba(240,109,109,.09);
+  border: 1px solid rgba(240,109,109,.28);
+  color: #f6b0b0;
+  font-size: 13px;
+}
+.del-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+@media (max-width: 560px) {
+  .del-actions .btn { flex: 1; justify-content: center; }
 }
