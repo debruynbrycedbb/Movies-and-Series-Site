@@ -1,319 +1,232 @@
 # Bryce's CineVault
 
-A personal film and TV library — 526 films and 41 series, rated out of 10, sorted however
-you like, with an auto-ranked Top 25.
+A private film and series tracker for a few friends and family. Everyone gets their
+own list. You rate titles out of 10, log the days you watched them, and can look at
+everyone else's lists and compare tastes.
 
-Pure static HTML/CSS/JS. No build step, no server, no API keys. Every file sits in one
-flat folder, so you can upload them all at once to GitHub.
+- **No emails and no personal details.** Members join with a username and a PIN.
+- **Not open to the public.** Joining needs the family code, and only members can see
+  any lists.
+- **Your list follows you.** Ratings are saved to your account, so they're the same on
+  your phone and your computer.
+- **Look, don't touch.** You can view anyone's list, but only you can change yours.
 
----
-
-## Put it online (GitHub Pages, free)
-
-1. Create a new repository on GitHub. Public is required for free Pages.
-2. On the repo page click **Add file → Upload files**.
-3. Select the 15 site files (everything ending in .html, .css or .js) and drop them in.
-   They all sit at the top level, so nothing can end up in the wrong place.
-   The `images/` folder is optional — see **Posters** below.
-4. Click **Commit changes**.
-5. Go to **Settings → Pages**.
-6. Under **Build and deployment → Source** pick **Deploy from a branch**.
-7. Set the branch to `main` and the folder to `/ (root)`, then **Save**.
-8. Wait about a minute. Your site is live at
-   `https://<your-username>.github.io/<repo-name>/`
-
-The files that must be uploaded:
-
-```
-index.html            Movies page (must be there — it's the homepage)
-series.html           Series page
-top25.html            Top 25 page
-genres.html           best title per genre, films and series
-stats.html            statistics, films and series
-styles.css            shared dark theme
-top25.css             Top 25 styling
-movies.js             your film list + settings
-series.js             your series list
-cast.js               lead actors, used by the Stats page only
-core.js               storage, ratings, poster lookup
-library.js            drives BOTH the Movies and Series pages
-top25.js              Top 25 ranking
-genres.js             genres page
-stats.js              statistics page
-POSTER-FILENAMES.txt  what to name your poster images (reference only)
-images/               your own poster images go here (optional)
-```
+The site is plain files on GitHub Pages (free). The lists live in a free Supabase
+database. Search and posters come from TMDB.
 
 ---
 
-## How it works
+## One-time setup (about 10 minutes)
 
-### Rating
-Click any poster. A panel opens with a slider and a number box — anything from
-**0.0 to 10.0 in 0.1 steps**. Drag the slider, type an exact number, or hit one of the
-quick buttons. Ratings save instantly and colour-code themselves (gold ≥ 9, cyan ≥ 8,
-green ≥ 7, and down from there).
+### 1. Set up the database
 
-Use **← / →** or the Previous/Next buttons to move through films without closing the panel.
+1. Open your project at [supabase.com](https://supabase.com/dashboard).
+2. Go to **SQL Editor → New query**.
+3. Open `setup.sql` from this folder, copy all of it, paste it in, and press **Run**.
+   You should see "Success. No rows returned".
 
-### Watch history
-Every film has a watch log. Open it and use **Watched today**, or pick any past
-date and hit **Add** — one entry per viewing, so a film you've seen four times
-has four dates. The list shows each date with how long ago it was, newest at the
-top, numbered from your first viewing upwards. Click the × on any entry to remove
-it. Films you've seen more than once get a small ⟳ count on their card in the grid.
+You can run `setup.sql` again at any time, for example after changing the family
+code. It never deletes anything.
 
-Two sorts come with it: **Last watched** (what you've seen most recently) and
-**Times watched** (your most-rewatched films). Anything with no logged date sinks
-to the bottom of both.
+### 2. Turn on sign-in
 
-Dates are stored as plain calendar dates, so "the 5th" stays the 5th regardless of
-timezone, and they ride along in your backup file.
+Go to **Authentication → Sign In / Providers** and switch on
+**Allow anonymous sign-ins**, then save.
 
-### Sorting and filtering
-Sort by your rating, title, release year, runtime, most recently rated, or your original
-list order, last watched, or times watched — ascending or descending. Filter by genre, by
-decade, or by whether you've rated it yet. Search matches titles, directors and genres. Press **/** to jump to the
-search box.
+This is what makes sign-in work without emails. Every browser that opens the site gets
+a silent session. Typing your name and PIN links that session to your profile. The
+database decides what each session can see and change.
 
-### On a phone
-The grid drops to three posters per row so you can scan a lot of films at once,
-the filter controls collapse into a single horizontally scrolling strip, and the
-film panel goes full-screen. Nothing is hidden — genres move to the film's panel
-rather than sitting under each poster, since there's no room for them at that width.
+### 3. Delete the secret key you sent earlier
 
-### Top 25
-Builds itself from your ratings — no manual list to maintain. Top 3 get the podium, ranks
-4–25 fill the list below. The **Scope** dropdown re-ranks within a single genre, so you can
-pull up your top sci-fi or your top animation.
+Go to **Project Settings → API Keys**. Delete the key starting with `sb_secret_` and
+create a new secret key if you need one. The site only ever uses the
+**publishable** key (`sb_publishable_…`), which is already in `config.js` and is safe
+in a public website.
 
-### Series
-The Series page is the Movies page pointed at a different list — same grid, ratings, watch
-log, filters and sorts. It reads `series.js`, which takes one series per line:
+> Never put an `sb_secret_` key in any file on the site. Anyone who has it can bypass
+> every rule in the database.
 
-```
-Title|Year|Seasons|Episodes|EpisodeMins|Genres|Creator|WikipediaTitle
-```
+### 4. Upload the files to GitHub
 
-Only the title is required, exactly like `movies.js`. **Episodes × EpisodeMins** is what the
-Statistics page counts as watch time, so a rough average episode length is fine — 22 for a
-sitcom, 45 for an hour drama, 55 for a prestige one.
+Replace everything in your repository with the files in this zip. The images folder
+stays as it is, so keep any posters you've already uploaded.
 
-Series ids carry a `tv--` prefix so a series can never collide with a film of the same name.
-That means a poster file is `images/tv--breaking-bad.jpg`, and ratings for *Fargo* the film
-and *Fargo* the series stay separate. Everything else — ratings, watch dates, backups — is
-shared, so one export covers both.
+New files: `config.js`, `db.js`, `boot.js`, `login.html`, `login.js`, `compare.html`,
+`compare.js`, `import.html`, `import.js` and `setup.sql`. Every other page has changed
+too, so upload all of them.
 
-### Genres
-Two sections, Movies and Series. Each shows your highest rated title in every genre with the
-next three behind it, and lists the genres you haven't rated anything in yet.
+(`setup.sql` doesn't need to be on GitHub, but it does no harm there because it
+contains no keys.)
 
-### Statistics
-A combined watch-time total at the top, then the same four things worked out twice — once
-for Movies, once for Series:
+### 5. Join, then bring in your old ratings
 
-- **Time spent watching** — every title counted once, plus one extra viewing for each watch
-  date you've logged beyond the first. So it starts from "I've seen all of these once" and
-  grows as you log rewatches. A series counts as episodes × average episode length. Anything
-  with no length yet sits it out.
-- **Best decade** and **best genre** — the average of your ratings within each group.
-- **Top actors** — the average of your ratings across an actor's films, from `cast.js`.
+1. Open the site. It sends you to the sign-in page.
+2. Choose **Join**, enter the family code, and pick a username and PIN.
+3. Open **⚙ → Bring in old ratings** (or go to `import.html`) **in the same browser
+   you used to rate films on the old site**. The old ratings are stored in that
+   browser.
+4. Leave everything ticked and press **Start import**. It copies:
+   - all 567 films and 41 series
+   - the ratings and watch dates saved in that browser
+   - a backup `.json` file, if you have one from the old Export button
+5. It also matches each title on TMDB so posters appear and your list lines up with
+   everyone else's. That takes a minute or two.
 
-Averages over one or two titles are noise, so a decade, genre or actor needs at least
-**3 rated titles** to be ranked. Groups below that show faded and can't take the top spot.
-Change the thresholds at the top of `stats.js`.
+You can run the import again safely. Anything already on your list is left alone.
 
-Bars run from 0 to 10 rather than zooming in on the range in use — that keeps the
-differences honestly sized, even though it makes them look small.
+### 6. Invite people
+
+Send them the site address and the family code. They choose **Join** and pick their
+own name and PIN.
 
 ---
 
-## ⚠️ Where your ratings live
+## Using it
 
-Ratings are stored in your browser's `localStorage`. That means:
+### Your list
 
-- ✅ They survive closing the tab, restarting the browser, and rebooting.
-- ❌ They **do not** sync to your phone or another computer.
-- ❌ They **are** lost if you clear your browser's site data.
+- **+ Add** (top left on a computer, the round button on a phone) searches TMDB. Pick
+  the right title, then **Add to my list**.
+  - For a series, tick the seasons you've watched.
+  - You can also enter the day you watched it.
+- Click any poster to rate it from 0 to 10 in steps of 0.1, log more watch dates, or
+  **Remove from my list**.
+- For a series, **How far I've got** sets your season and episode count. The Stats
+  page uses that for watch time.
 
-This is the trade-off for a site with no server and no running costs. To protect them, open
-the **⬇ button** in the header and hit **Export** — you get a small `.json` file with every
-rating and watch date. **Import** it on another device (or after clearing data) to restore;
-ratings take the newer version and watch dates merge together. Worth doing once you've rated
-a decent batch.
+### Other people's lists
+
+Use the **List** dropdown under the menu to switch to someone else's list. Every page
+then shows their list: Movies, Series, Top 25, Genres and Stats. The bar turns purple
+so you know you're looking at someone else's list, and **Back to mine** returns you to
+yours.
+
+On someone else's list:
+
+- Click a poster to see their rating and watch dates.
+- **+ Add to my list** copies that title onto yours.
+- **Also on** shows what every other member rated the same title.
+
+### Compare
+
+Pick any two members and Movies or Series. The page shows:
+
+- how many titles each of you has, and how many you've both seen
+- **Taste match**: how close your scores are on titles you've both rated. 100% means
+  identical scores. It needs at least 3 titles you've both rated.
+- average ratings per genre, side by side
+- where you disagree most, and where you agree
+- each person's highly rated titles the other hasn't seen, with a **+ My list**
+  button
+
+### Account (⚙)
+
+The ⚙ button on the Movies and Series pages lets you:
+
+- change your PIN
+- sign out
+- export a copy of a list
+- bring in old ratings
+- test or refresh posters
 
 ---
 
-## Posters — using your own images
+## Looking after the site
 
-The site looks for a poster in this order, and stops at the first one it finds:
+### Forgotten PIN
 
-1. A URL you typed into a film's **"point at an image on the web"** box
-2. **Your own file in the `images/` folder** ← the reliable option
-3. Whatever Wikipedia's public API turns up automatically
-4. A plain gradient tile with the title on it
+There's no email, so you reset it yourself in Supabase. In **SQL Editor**, run:
 
-So anything you put in `images/` wins. Films you skip fall back to the automatic
-lookup, which means you can add your own a handful at a time without anything breaking.
+```sql
+update app_private.credentials
+   set pin_hash = extensions.crypt('1234', extensions.gen_salt('bf'))
+ where profile_id = (select id from public.profiles where username = 'theirname');
+```
 
-### Adding your own images
+Then tell them their new PIN is 1234 and ask them to change it under ⚙.
 
-Name each file after the title's **id**. `POSTER-FILENAMES.txt` lists all 567 of them, films
-and series in separate sections:
+The bottom of `setup.sql` has more of these snippets, including how to list members
+and how to remove one.
+
+### Changing the family code
+
+Edit the line `values ('family_code', '0011')` near the top of `setup.sql` and run the
+whole file again.
+
+A 4-digit code is easy to share but also fairly easy to guess, even though the
+database pauses joining for an hour after 20 wrong tries. Six or more characters
+(for example `popcorn-42`) is much stronger. Changing the code doesn't affect anyone
+who has already joined.
+
+### Lockouts
+
+- **10 wrong PINs** for a username in 15 minutes locks that username for 15 minutes.
+- **20 wrong family codes** in an hour, from anyone, pauses joining for an hour.
+
+### The free Supabase plan pauses idle projects
+
+If nobody opens the site for **a week**, Supabase pauses the database and the site
+shows "Couldn't open the vault". Open your project at supabase.com and press
+**Restore**. Your data is kept. Any regular use stops this from happening.
+
+---
+
+## Posters
+
+The site looks for a poster in this order and uses the first one it finds:
+
+1. A URL typed into a title's **"point at an image on the web"** box. This only
+   applies in that browser.
+2. **A file in the `images/` folder**. Everyone sees it.
+3. The TMDB poster saved with the title. Anything added with **+ Add** or matched
+   during the import has one.
+4. A search on TMDB, then Wikipedia.
+5. A plain tile with the title on it.
+
+### Your own images
+
+Name each file after the title's id. `POSTER-FILENAMES.txt` lists them all, for
+example:
 
 ```
 images/inception.jpg
-images/the-dark-knight.jpg
-images/spider-man-2.jpg
+images/tv--breaking-bad.jpg
 ```
 
-`.jpg`, `.jpeg`, `.png` and `.webp` all work. Portrait images are best — the slots are
-2:3, so roughly 400×600. Keep them under about 200 KB each so the page stays quick.
+`.jpg`, `.jpeg`, `.png` and `.webp` all work. Portrait images in a 2:3 shape (about
+400×600) are best.
 
-Don't want to look up the id? Open the film on the site, expand **"Poster wrong or
-missing? Fix it"**, and it shows you the exact filename with a Copy button.
+To find the exact filename for any title, open it and expand **Poster wrong or
+missing? Fix it**. It shows the filename with a Copy button.
 
-### Creating the images folder on GitHub
+**Creating the images folder on GitHub:**
 
-GitHub's uploader won't let you make a folder directly, but typing a `/` in a filename
-does it for you:
+1. Choose **Add file → Create new file**.
+2. Type `images/README.md` as the name. The slash creates the folder.
+3. Commit the file.
+4. Upload images into that folder.
 
-1. **Add file → Create new file**
-2. Type `images/README.md` in the name box — the moment you type the slash, GitHub
-   creates the `images` folder
-3. Put anything in the file body, then **Commit changes**
-4. Now click into the `images` folder and use **Add file → Upload files**. Everything you
-   drop there lands in the right place.
-
-(The zip already contains `images/README.md`, so if you upload by dragging the folder
-you can skip this.)
-
-### Where the automatic posters come from
-
-For films you haven't supplied an image for, the site tries each source in
-`CONFIG.posterSources` (top of `movies.js`) in order:
-
-| Source | Key needed | Coverage | Quality |
-|---|---|---|---|
-| `tmdb` | Yes, free | Nearly every film | Sharp, 500px wide |
-| `wikipedia` | No | Patchy | Softer, ~300px |
-
-**Getting a TMDB key takes about two minutes and is the single biggest
-improvement you can make to how this site looks.** Make an account at
-themoviedb.org, go to **Settings → API**, request a key (pick "Developer",
-any personal-use description is fine), and copy the **API Key (v3 auth)**
-value.
-
-Then either paste it into **Settings → TMDB API key** on the site (stays in
-your browser, never committed to the repo), or put it in `movies.js`:
-
-```js
-tmdbApiKey: 'your-key-here',
-```
-
-Saving the key on the site immediately re-checks every film.
-
-To switch automatic lookup off entirely, once your own images cover
-everything:
-
-```js
-posterSources: [],
-```
-
-The site then never touches the network.
-
-### When posters don't appear
-
-Open **Settings → Test poster sources**. It runs one lookup against each
-source and tells you exactly what happened:
-
-- **OK** — the source works. Sparse posters just mean it has no image for
-  those particular films; add your own or set a TMDB key.
-- **SKIPPED** — no TMDB key set.
-- **EMPTY** — the source answered but has nothing for that film.
-- **ERROR** — something blocked the request. Usually an ad blocker or
-  privacy extension, a network that filters those domains, or opening the
-  page as a local file instead of over https. Try the live site in a private
-  window with extensions disabled.
-
-While a lookup is running, a progress line under the page title shows how
-far it has got.
-
-### If a new image doesn't show up
-
-Hard-refresh with **Ctrl+Shift+R** (**Cmd+Shift+R** on Mac), or use
-**Settings → Refresh posters**. The site remembers which files exist so it isn't
-checking for missing ones constantly, and that memory clears on a refresh.
+If a new image doesn't appear, hard-refresh with Ctrl+Shift+R (Cmd+Shift+R on a Mac),
+or use **⚙ → Refresh posters**.
 
 ---
 
-## Editing the cast list
+## What each file does
 
-`cast.js` holds the lead actors for each film and is read by the Statistics page only.
-Format matches `movies.js`:
-
-```
-Title|Actor, Actor, Actor
-```
-
-The title must match `movies.js` exactly. A film missing from `cast.js` still works
-everywhere else — it just doesn't feed the actor rankings. **Series cast goes in the same
-file** on the same kind of line, using the series title; the Statistics page keeps the two
-sets of actor rankings apart on its own. Three or four billed leads per
-film is right; adding whole casts would bury the rankings in one-scene parts.
-
----
-
-## Editing your film list
-
-Your whole list lives in `movies.js`, one film per line, fields separated by `|`:
-
-```
-Title|Year|Runtime|Genre,Genre|Director|WikipediaTitle
-```
-
-**Only the title is required.** You can stop at any point and leave the rest off:
-
-```
-Sicario|2015|121|Thriller,Crime|Denis Villeneuve|
-Sicario|2015|121|Thriller,Crime|      <- no director
-Sicario|2015                          <- just a year
-Sicario                               <- bare minimum
-```
-
-A film with no year still works — it just won't appear under a decade filter. No genres means
-it won't appear under a genre filter. Everything else behaves normally, and you can fill the
-details in later.
-
-| Field | What it does |
+| File | Purpose |
 |---|---|
-| Title | Required. Also decides the poster filename and the rating key. |
-| Year | Sorting and the decade filter. |
-| Runtime | Minutes. Blank or `0` shows as unknown. |
-| Genres | Comma separated. Feeds the genre filter and the Top 25 scope dropdown. |
-| Director | Shown on the film's panel, and searchable. |
-| Wikipedia | Only when the article name differs, e.g. `Gladiator (2000 film)`. |
+| `config.js` | Supabase address, publishable key and TMDB key. Safe to publish. |
+| `db.js` | Everything that reads or writes the database, plus TMDB search. |
+| `boot.js` | Runs first on every page. Checks you're signed in, loads the list being viewed, adds the member bar. |
+| `login.html`, `login.js` | Sign in and Join. |
+| `index.html`, `series.html`, `library.js` | The Movies and Series pages. |
+| `top25.*`, `genres.*`, `stats.*` | Top 25, best per genre, statistics. |
+| `compare.html`, `compare.js` | Side-by-side comparison of two members. |
+| `import.html`, `import.js` | One-off copy of the old site's data into an account. |
+| `movies.js`, `series.js`, `cast.js` | The original hand-typed list. Only the import page uses these now; new titles come from **+ Add**. |
+| `core.js`, `styles.css`, `top25.css` | Shared code and styling. |
+| `setup.sql` | The database tables and the rules for who can see and change what. |
 
-Blank lines are ignored, and a line starting with `#` is treated as a comment — handy for
-grouping (`# Watched in 2026`).
-
-If a line is malformed the site skips it and explains why in the browser console (F12) rather
-than breaking. Duplicate titles get flagged there too, since two films with the same title
-would otherwise share one rating.
-
-**Careful:** a film's rating and its poster filename are both keyed to its title. Renaming a
-title orphans both.
-
-### Editing it on GitHub
-
-1. Open `movies.js` in your repo
-2. Click the pencil icon (top right of the file)
-3. Add or remove lines
-4. **Commit changes** at the bottom
-
-The live site updates in about a minute. Your ratings are untouched — they live in your
-browser, not in this file.
-
----
-
-To run it locally, just open `index.html` in your browser. No server needed.
+This product uses the TMDB API but is not endorsed or certified by TMDB. TMDB's API is
+free for non-commercial use like this.

@@ -545,6 +545,47 @@ Open Season 2|Joel McHale, Mike Epps, Jane Krakowski
 Open Season 3|Matthew W. Taylor, Melissa Sturm, Karley Scott Collins
 The Housemaid|Sydney Sweeney, Amanda Seyfried, Brandon Sklenar
 Diary of a Wimpy Kid|Zachary Gordon, Robert Capron, Rachael Harris
+Peaky Blinders: The Immortal Man|Cillian Murphy, Rebecca Ferguson, Barry Keoghan
+Game Night|Jason Bateman, Rachel McAdams, Jesse Plemons
+Dodgeball: A True Underdog Story|Vince Vaughn, Ben Stiller, Christine Taylor
+Hancock|Will Smith, Charlize Theron, Jason Bateman
+Identity Thief|Jason Bateman, Melissa McCarthy, Jon Favreau
+Vacation|Ed Helms, Christina Applegate, Chris Hemsworth
+Green Lantern|Ryan Reynolds, Blake Lively, Peter Sarsgaard
+Batman v Superman: Dawn of Justice|Ben Affleck, Henry Cavill, Amy Adams
+Suicide Squad|Will Smith, Margot Robbie, Jared Leto
+The Suicide Squad|Idris Elba, Margot Robbie, John Cena
+Justice League|Ben Affleck, Henry Cavill, Gal Gadot
+The Batman|Robert Pattinson, Zoe Kravitz, Paul Dano
+The Flash|Ezra Miller, Michael Keaton, Sasha Calle
+Superman|David Corenswet, Rachel Brosnahan, Nicholas Hoult
+The Hangover|Bradley Cooper, Ed Helms, Zach Galifianakis
+The Hangover Part II|Bradley Cooper, Ed Helms, Zach Galifianakis
+The Hangover Part III|Bradley Cooper, Ed Helms, Zach Galifianakis
+National Treasure|Nicolas Cage, Diane Kruger, Justin Bartha
+The Rock|Sean Connery, Nicolas Cage, Ed Harris
+The Mask of Zorro|Antonio Banderas, Anthony Hopkins, Catherine Zeta-Jones
+First Blood|Sylvester Stallone, Richard Crenna, Brian Dennehy
+Rambo: First Blood Part II|Sylvester Stallone, Richard Crenna, Charles Napier
+Home Alone|Macaulay Culkin, Joe Pesci, Daniel Stern
+Home Alone 2: Lost in New York|Macaulay Culkin, Joe Pesci, Daniel Stern
+Don't Look Up|Leonardo DiCaprio, Jennifer Lawrence, Meryl Streep
+Leave the World Behind|Julia Roberts, Mahershala Ali, Ethan Hawke
+First Man|Ryan Gosling, Claire Foy, Jason Clarke
+The Grinch|Benedict Cumberbatch, Rashida Jones, Kenan Thompson
+How the Grinch Stole Christmas|Jim Carrey, Taylor Momsen, Jeffrey Tambor
+American Psycho|Christian Bale, Willem Dafoe, Jared Leto
+Mr. Bean's Holiday|Rowan Atkinson, Willem Dafoe, Emma de Caunes
+Johnny English Reborn|Rowan Atkinson, Gillian Anderson, Rosamund Pike
+Johnny English Strikes Again|Rowan Atkinson, Olga Kurylenko, Ben Miller
+The Expendables|Sylvester Stallone, Jason Statham, Jet Li
+Mrs. Doubtfire|Robin Williams, Sally Field, Pierce Brosnan
+Good Morning, Vietnam|Robin Williams, Forest Whitaker, Bruno Kirby
+2012|John Cusack, Amanda Peet, Chiwetel Ejiofor
+Murder Mystery|Adam Sandler, Jennifer Aniston, Luke Evans
+Warcraft|Travis Fimmel, Paula Patton, Ben Foster
+Bright|Will Smith, Joel Edgerton, Noomi Rapace
+Unbroken|Jack O'Connell, Domhnall Gleeson, Garrett Hedlund
 
 # ---- series (keys are series titles; the tv-- prefix is added below) ----
 # Anthologies (Black Mirror, Love Death & Robots) and documentaries

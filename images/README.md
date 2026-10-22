@@ -11,9 +11,9 @@ in the project root. For example:
 
 `.jpg`, `.jpeg`, `.png` and `.webp` all work.
 
-Any film you don't supply an image for falls back to the poster the site
-finds on Wikipedia, so you can add these a handful at a time — nothing
-breaks in the meantime.
+Any title you don't supply an image for falls back to its TMDB poster
+(or a Wikipedia one), so you can add these a handful at a time — nothing
+breaks in the meantime. Images here are shown to every member.
 
 ## Tips
 

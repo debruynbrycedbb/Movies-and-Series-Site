@@ -17,6 +17,8 @@ const state = {
 const ITEMS = PAGE_ITEMS;
 const NOUN  = PAGE_NOUN;
 const IS_SERIES = NOUN.one === 'series';
+const B = window.BOOT;
+const READONLY = !!B.readonly;
 
 let visible = [];      // the currently displayed (filtered + sorted) list
 let openIndex = -1;    // which title the modal is showing
@@ -47,6 +49,18 @@ function buildFilters() {
     o.value = d; o.textContent = d + 's';
     dSel.appendChild(o);
   });
+}
+
+/** Refill the dropdowns after the list changes, keeping what's picked. */
+function rebuildFilters() {
+  const g = $('#genre').value, d = $('#decade').value;
+  $('#genre').length = 1;
+  $('#decade').length = 1;
+  buildFilters();
+  $('#genre').value = [...$('#genre').options].some(o => o.value === g) ? g : '';
+  $('#decade').value = [...$('#decade').options].some(o => o.value === d) ? d : '';
+  state.genre = $('#genre').value;
+  state.decade = $('#decade').value;
 }
 
 /* ---------- filter + sort ---------- */
@@ -140,6 +154,20 @@ function render() {
   const dirty = state.q || state.genre || state.decade || state.status !== 'all';
   $('#resetBtn').hidden = !dirty;
 
+  if (!ITEMS.length) {
+    grid.innerHTML = READONLY ? `
+      <div class="empty">
+        <h3>${escapeHtml(B.viewing.username)} hasn't added any ${NOUN.many} yet</h3>
+        <p>Check back once they've started their list.</p>
+      </div>` : `
+      <div class="empty">
+        <h3>No ${NOUN.many} on your list yet</h3>
+        <p>Press <b>+ Add</b> to search for one${B.me.username === 'bryce' || B.members.length === 1
+          ? ', or <a href="import.html" style="color:var(--accent)">bring in your original list</a>' : ''}.</p>
+      </div>`;
+    return;
+  }
+
   if (!visible.length) {
     grid.innerHTML = `
       <div class="empty">
@@ -158,7 +186,7 @@ function render() {
 function cardHtml(m, i) {
   const r = Store.getRating(m.id);
   const chip = r === null
-    ? `<span class="chip unrated">Rate</span>`
+    ? (READONLY ? '' : `<span class="chip unrated">Rate</span>`)
     : `<span class="chip" style="color:${ratingColor(r)}">${fmtRating(r)}</span>`;
 
   const rt = fmtRuntime(m.runtime);
@@ -179,7 +207,7 @@ function cardHtml(m, i) {
       <div class="poster">
         ${posterInner(m)}
         <div class="poster-shade"></div>
-        <div class="poster-cta">${r === null ? 'Rate it' : 'Edit rating'}</div>
+        <div class="poster-cta">${READONLY ? 'Details' : (r === null ? 'Rate it' : 'Edit rating')}</div>
         ${chip}
       </div>
       <div class="meta">
@@ -223,14 +251,21 @@ function openModal(index) {
 
   $('#mTags').innerHTML = m.genres.map(g => `<span class="tag">${escapeHtml(g)}</span>`).join('');
   $('#mKindNote').textContent = IS_SERIES && m.episodes
-    ? `${m.episodes} episodes${m.epMins ? ` × ~${m.epMins} min` : ''}`
+    ? `${m.seasons ? m.seasons + (m.seasons === 1 ? ' season, ' : ' seasons, ') : ''}` +
+      `${m.episodes} episodes${m.epMins ? ` × ~${m.epMins} min` : ''}`
     : '';
   $('#mPoster').innerHTML = posterInner(m);
   $('#mPosterUrl').value = Store.getOverride(m.id);
-  $('#mFilename').textContent = `${CONFIG.imageFolder}/${m.id}.jpg`;
+  $('#mFilename').textContent = `${CONFIG.imageFolder}/${m.slug}.jpg`;
+  $('#mRateLabel').textContent = READONLY ? `${B.viewing.username}'s rating` : 'My rating';
 
   setValue(r === null ? null : r, false);
   renderWatches(m);
+  renderProgress(m);
+  renderOthers(m);
+  $('#mAddMine').hidden = !READONLY;
+  $('#mAddMine').disabled = false;
+  $('#mAddMine').textContent = '+ Add to my list';
 
   $('#mPrev').disabled = index === 0;
   $('#mNext').disabled = index === visible.length - 1;
@@ -269,6 +304,65 @@ function setValue(v, markDirty) {
   if (markDirty) $('#mSaved').classList.remove('show');
 }
 
+/* ---------- what everyone else gave it ---------- */
+
+let othersReq = 0;
+async function renderOthers(m) {
+  const box = $('#mOthers');
+  box.hidden = true;
+  const req = ++othersReq;
+  let rows;
+  try { rows = await DB.titleRatings(m.id); } catch (e) { return; }
+  if (req !== othersReq) return;                     // moved on to another title
+
+  const name = Object.fromEntries(B.members.map(x => [x.id, x.username]));
+  const others = rows.filter(r => r.user_id !== B.viewing.id)
+    .map(r => ({ who: name[r.user_id] || '?', me: r.user_id === B.me.id,
+                 r: r.rating === null ? null : Number(r.rating) }))
+    .sort((a, b) => (b.me - a.me) || ((b.r ?? -1) - (a.r ?? -1)));
+  if (!others.length) return;
+
+  if (READONLY && !others.some(o => o.me)) $('#mAddMine').hidden = false;
+  if (READONLY && others.some(o => o.me)) {
+    $('#mAddMine').hidden = false;
+    $('#mAddMine').disabled = true;
+    $('#mAddMine').textContent = 'On your list';
+  }
+
+  box.innerHTML = '<span class="others-label">Also on</span>' + others.map(o => `
+    <span class="other">${escapeHtml(o.me ? 'you' : o.who)}
+      <b style="color:${ratingColor(o.r)}">${o.r === null ? 'unrated' : fmtRating(o.r)}</b></span>`).join('');
+  box.hidden = false;
+}
+
+/* ---------- series: how far you've got ---------- */
+
+function renderProgress(m) {
+  const box = $('#mProgress');
+  box.hidden = !IS_SERIES || READONLY;
+  if (box.hidden) return;
+  $('#mSeasons').value = m.seasons || '';
+  $('#mEpisodes').value = m.episodes || '';
+  $('#mProgHint').textContent = m.totalEpisodes
+    ? `The whole series is ${m.totalSeasons} season${m.totalSeasons === 1 ? '' : 's'}, ${m.totalEpisodes} episodes. Watch time on the Stats page uses your episode count.`
+    : 'Watch time on the Stats page uses your episode count.';
+}
+
+async function saveProgress() {
+  if (openIndex === -1 || READONLY) return;
+  const m = visible[openIndex];
+  const seasons = Math.max(0, parseInt($('#mSeasons').value, 10) || 0);
+  const episodes = Math.max(0, parseInt($('#mEpisodes').value, 10) || 0);
+  try {
+    await DB.updateProgress(B.me.id, m.id, seasons, episodes);
+  } catch (e) { toast("Couldn't save that — try again"); return; }
+  m.seasons = seasons; m.episodes = episodes; m.runtime = episodes * (m.epMins || 0);
+  $('#mKindNote').textContent = `${seasons} season${seasons === 1 ? '' : 's'}, ${episodes} episodes` +
+    (m.epMins ? ` × ~${m.epMins} min` : '');
+  refreshCard(m.id);
+  toast('Saved');
+}
+
 /* ---------- watch history ---------- */
 
 function renderWatches(m) {
@@ -284,7 +378,9 @@ function renderWatches(m) {
   if (!dates.length) {
     summary.className = 'watch-summary none';
     summary.textContent = 'Never logged';
-    list.innerHTML = `<li class="watch-empty" style="border:0">
+    list.innerHTML = READONLY
+      ? `<li class="watch-empty" style="border:0">No viewing dates logged.</li>`
+      : `<li class="watch-empty" style="border:0">
         Log the days you've seen this. Add as many as you like — every rewatch
         gets its own entry.
       </li>`;
@@ -368,10 +464,14 @@ function updateTagline() {
   const total = ITEMS.length;
   const rated = ITEMS.filter(m => Store.getRating(m.id) !== null).length;
   const el = $('#tagline');
+  if (READONLY) {
+    const who = B.viewing.username;
+    el.textContent = !total ? `${who} hasn't added any ${NOUN.many} yet.`
+      : `${total} ${NOUN.many} on ${who}'s list, ${rated} rated. Click any poster for details.`;
+    return;
+  }
   if (!total) {
-    el.textContent = IS_SERIES
-      ? 'No series listed yet — add them to series.js and they show up here.'
-      : 'No films listed yet — add them to movies.js and they show up here.';
+    el.textContent = `Nothing here yet — press + Add to put your first ${NOUN.one} on the list.`;
   } else if (!rated) {
     el.textContent = `${total} ${NOUN.many} watched. Click any poster to rate it out of 10.`;
   } else if (rated < total) {
@@ -534,6 +634,10 @@ function init() {
 
   /* --- keyboard --- */
   document.addEventListener('keydown', e => {
+    if (addOverlay.classList.contains('open')) {
+      if (e.key === 'Escape') closeAdd();
+      return;
+    }
     if (dataOverlay.classList.contains('open') && e.key === 'Escape') {
       dataOverlay.classList.remove('open');
       document.body.style.overflow = '';
@@ -566,33 +670,32 @@ function init() {
   $('#dClose').addEventListener('click', closeData);
   dataOverlay.addEventListener('mousedown', e => { if (e.target === dataOverlay) closeData(); });
 
+  $('#dWho').innerHTML = `Signed in as <b>${escapeHtml(B.me.username)}</b>. `
+    + `${B.members.length} member${B.members.length === 1 ? '' : 's'} in the vault.`;
+
   $('#expBtn').addEventListener('click', () => {
     const stamp = new Date().toISOString().slice(0, 10);
-    download(`cinevault-ratings-${stamp}.json`, JSON.stringify(Store.exportData(), null, 2));
-    toast('Backup downloaded');
+    const who = B.viewing.username;
+    download(`cinevault-${who}-${IS_SERIES ? 'series' : 'movies'}-${stamp}.json`,
+             JSON.stringify(Store.exportData(ITEMS), null, 2));
+    toast('Copy downloaded');
   });
 
-  $('#impBtn').addEventListener('click', () => $('#impFile').click());
-  $('#impFile').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const n = Store.importData(JSON.parse(reader.result), 'merge');
-        render();
-        renderHeaderStats();
-        updateTagline();
-        const parts = [`${n.ratings} rating${n.ratings === 1 ? '' : 's'}`];
-        if (n.dates) parts.push(`${n.dates} watch date${n.dates === 1 ? '' : 's'}`);
-        toast('Imported ' + parts.join(' and '));
-        closeData();
-      } catch (err) {
-        toast(err.message || 'Could not read that file');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  $('#pinSave').addEventListener('click', async () => {
+    const oldPin = $('#pinOld').value, newPin = $('#pinNew').value;
+    if (newPin.length < 4) { toast('A PIN needs at least 4 characters'); return; }
+    try {
+      const res = await DB.changePin(oldPin, newPin);
+      if (res === 'ok') {
+        $('#pinOld').value = ''; $('#pinNew').value = '';
+        toast('PIN changed');
+      } else toast(res === 'wrong' ? "That isn't your current PIN" : 'Could not change it (' + res + ')');
+    } catch (e) { toast(e.message || 'Could not change it'); }
+  });
+
+  $('#outBtn').addEventListener('click', async () => {
+    try { await DB.logout(); } catch (e) { /* going anyway */ }
+    location.replace('login.html');
   });
 
   $('#refBtn').addEventListener('click', async () => {
@@ -602,22 +705,6 @@ function init() {
     const { found, fetched } = await Posters.warm(ITEMS);
     render();
     toast(fetched ? `Found ${found} of ${fetched} posters` : 'Automatic lookup is switched off');
-  });
-
-  /* --- TMDB key --- */
-  $('#tmdbKey').value = Store.getTmdbKey();
-  $('#tmdbSave').addEventListener('click', async () => {
-    const key = $('#tmdbKey').value.trim();
-    Store.setTmdbKey(key);
-    if (!key) { toast('API key removed'); return; }
-    toast('Key saved — looking up posters…');
-    // Retry every film that previously came up empty.
-    Store.clearPosterCache();
-    render();
-    closeData();
-    const { found, fetched } = await Posters.warm(ITEMS);
-    render();
-    toast(`Found ${found} of ${fetched} posters`);
   });
 
   /* --- source diagnostics --- */
@@ -638,9 +725,9 @@ function init() {
     const ok = results.some(r => r.state === 'ok');
     let note;
     if (ok) {
-      note = 'Working. If posters still look sparse, that source simply has no image for those films — add your own to the images folder, or set a TMDB key above.';
+      note = 'Working. If posters still look sparse, that source simply has no image for those titles — add your own to the images folder.';
     } else if (results.every(r => r.state === 'skipped')) {
-      note = 'No source is active. Paste a TMDB key above, or check posterSources in movies.js.';
+      note = 'No source is active. Check tmdbApiKey and posterSources in config.js.';
     } else if (results.some(r => r.state === 'error')) {
       note = 'Something is blocking the request. The usual causes: an ad blocker or privacy extension, a network that filters these domains, or opening the page as a local file instead of over https. Try the live site in a private window with extensions off.';
     } else {
@@ -652,17 +739,8 @@ function init() {
     $('#testBtn').disabled = false;
   });
 
-  $('#wipeBtn').addEventListener('click', () => {
-    if (!confirm('Erase every rating and watch date in this browser? This cannot be undone.')) return;
-    ITEMS.forEach(m => { Store.clearRating(m.id); Store.clearWatches(m.id); });
-    render();
-    renderHeaderStats();
-    updateTagline();
-    closeData();
-    toast('All ratings and dates erased');
-  });
-
   syncDirBtn();
+  initListEditing();
 
   /* --- posters --- */
   // Swap each poster in as it resolves, without rebuilding the grid.
@@ -703,6 +781,289 @@ function init() {
   });
 
   Posters.warm(ITEMS);
+}
+
+/* ============================================================
+   CHANGING THE LIST - add, remove, copy from another member
+   ============================================================ */
+
+const KIND = IS_SERIES ? 'series' : 'movie';
+const addOverlay = $('#addOverlay');
+let addReq = 0;
+let addTimer = null;
+
+function openAdd() {
+  if (READONLY) return;
+  addOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  $('#aPick').hidden = true;
+  $('#aResults').hidden = false;
+  $('#aQ').focus();
+  $('#aQ').select();
+}
+
+function closeAdd() {
+  addOverlay.classList.remove('open');
+  if (!overlay.classList.contains('open')) document.body.style.overflow = '';
+}
+
+/** Something on your list that is probably this one. */
+function alreadyHave(tmdbId, title, year) {
+  return ITEMS.find(m => m.tmdbId && m.tmdbId === tmdbId)
+      || ITEMS.find(m => !m.tmdbId && m.title.toLowerCase() === String(title).toLowerCase()
+                         && (!m.year || !year || Math.abs(m.year - year) <= 1));
+}
+
+async function runSearch(q) {
+  const req = ++addReq;
+  const box = $('#aResults');
+  q = q.trim();
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="add-note"><span class="spinner"></span> Searching…</div>';
+
+  let res;
+  try {
+    res = await TMDB.search(KIND, q);
+  } catch (e) {
+    if (req === addReq) box.innerHTML = `<div class="add-note">Search isn't working right now (${escapeHtml(e.message || e)}).</div>`;
+    return;
+  }
+  if (req !== addReq) return;                         // a newer search is on its way
+
+  if (!res.length) {
+    box.innerHTML = `<div class="add-note">Nothing found for “${escapeHtml(q)}”. Try fewer words, or check the spelling.</div>`;
+    return;
+  }
+
+  box.innerHTML = res.map(r => {
+    const have = alreadyHave(r.tmdb_id, r.title, r.year);
+    const img = r.poster_path
+      ? `<img src="${TMDB.posterUrl(r.poster_path, 'w185')}" alt="" loading="lazy">`
+      : `<div class="poster-fallback"><div class="pf-title">${escapeHtml(r.title)}</div></div>`;
+    return `
+      <button class="add-hit ${have ? 'have' : ''}" data-tmdb="${r.tmdb_id}">
+        <div class="add-hit-poster">${img}${have ? '<span class="have-tag">On your list</span>' : ''}</div>
+        <div class="add-hit-t">${escapeHtml(r.title)}</div>
+        <div class="add-hit-y">${fmtYear(r.year)}</div>
+      </button>`;
+  }).join('');
+}
+
+async function pick(tmdbId) {
+  const box = $('#aPick');
+  $('#aResults').hidden = true;
+  box.hidden = false;
+  box.innerHTML = '<div class="add-note"><span class="spinner"></span> Getting the details…</div>';
+
+  let d;
+  try {
+    d = await TMDB.details(KIND, tmdbId);
+  } catch (e) {
+    box.innerHTML = `<div class="add-note">Couldn't load that one (${escapeHtml(e.message || e)}).
+      <button class="btn btn-ghost" id="aBack">Back</button></div>`;
+    $('#aBack').onclick = backToResults;
+    return;
+  }
+
+  const have = alreadyHave(d.tmdb_id, d.title, d.year);
+  const facts = [fmtYear(d.year), d.director,
+                 d.kind === 'series'
+                   ? `${d.seasons} season${d.seasons === 1 ? '' : 's'} · ${d.episodes} episodes`
+                   : fmtRuntime(d.runtime)].filter(Boolean);
+
+  const seasonPicker = d.kind === 'series' && d.seasonList.length ? `
+    <div class="season-pick">
+      <div class="sp-head">
+        <span class="rate-label">Seasons I've watched</span>
+        <button class="sp-all" type="button" id="aAll">None</button>
+      </div>
+      <div class="sp-grid">
+        ${d.seasonList.map(x => `
+          <label class="sp"><input type="checkbox" value="${x.n}" data-eps="${x.episodes}" checked>
+            <span>S${x.n}</span><small>${x.episodes} ep</small></label>`).join('')}
+      </div>
+    </div>` : '';
+
+  box.innerHTML = `
+    <button class="add-back" id="aBack">&larr; Back to results</button>
+    <div class="add-detail">
+      <div class="add-detail-poster">${d.poster_path
+        ? `<img src="${TMDB.posterUrl(d.poster_path, 'w342')}" alt="">`
+        : `<div class="poster-fallback"><div class="pf-title">${escapeHtml(d.title)}</div></div>`}</div>
+      <div>
+        <h3>${escapeHtml(d.title)}</h3>
+        <div class="modal-sub">${facts.map(escapeHtml).join('<span class="dot">·</span>')}</div>
+        <div class="tags">${d.genres.map(g => `<span class="tag">${escapeHtml(g)}</span>`).join('')}</div>
+        ${d.cast.length ? `<p class="add-cast">${escapeHtml(d.cast.join(', '))}</p>` : ''}
+      </div>
+    </div>
+    ${seasonPicker}
+    <label class="add-date">
+      <span class="rate-label">Watched on <small>(optional)</small></span>
+      <input type="date" id="aDate" max="${todayISO()}">
+    </label>
+    <div class="add-go">
+      ${have
+        ? `<span class="add-note" style="padding:0">Already on your list.</span>
+           <button class="btn btn-primary" id="aOpen">Open it</button>`
+        : `<button class="btn btn-primary" id="aGo">Add to my list</button>`}
+    </div>`;
+
+  $('#aBack').onclick = backToResults;
+  if (have) { $('#aOpen').onclick = () => { closeAdd(); showItem(have.id); }; return; }
+
+  const all = $('#aAll');
+  if (all) {
+    const boxes = () => [...box.querySelectorAll('.sp input')];
+    const sync = () => { all.textContent = boxes().every(b => b.checked) ? 'None' : 'All'; };
+    all.onclick = () => { const on = all.textContent === 'All'; boxes().forEach(b => (b.checked = on)); sync(); };
+    box.querySelector('.sp-grid').addEventListener('change', sync);
+  }
+  $('#aGo').onclick = () => confirmAdd(d);
+}
+
+function backToResults() {
+  $('#aPick').hidden = true;
+  $('#aResults').hidden = false;
+  $('#aQ').focus();
+}
+
+async function confirmAdd(d) {
+  const go = $('#aGo');
+  go.disabled = true;
+  go.textContent = 'Adding…';
+
+  let seasonsW = null, episodesW = null;
+  if (d.kind === 'series') {
+    const picked = [...$('#aPick').querySelectorAll('.sp input')].filter(b => b.checked);
+    if (d.seasonList.length && !picked.length) {
+      toast('Tick at least one season');
+      go.disabled = false; go.textContent = 'Add to my list';
+      return;
+    }
+    if (d.seasonList.length) {
+      seasonsW = picked.length;
+      episodesW = picked.reduce((n, b) => n + (+b.dataset.eps || 0), 0);
+    }
+  }
+  const date = $('#aDate').value;
+
+  try {
+    const entry = Object.assign({}, d);
+    delete entry.seasonList;
+    const [tid] = await DB.upsertTitles([entry]);
+    await DB.addToList([{
+      user_id: B.me.id, title_id: tid,
+      seasons_watched: seasonsW, episodes_watched: episodesW
+    }], true);
+
+    const item = B.toItem({
+      title_id: tid, seasons_watched: seasonsW, episodes_watched: episodesW,
+      t: {
+        id: tid, kind: d.kind, tmdb_id: d.tmdb_id, title: d.title, year: d.year,
+        runtime: d.runtime || null, seasons: d.seasons || null, episodes: d.episodes || null,
+        ep_mins: d.ep_mins || null, genres: d.genres, director: d.director,
+        cast_names: d.cast, poster_path: d.poster_path, wiki: null
+      }
+    }, ITEMS.reduce((n, m) => Math.max(n, m.order), -1) + 1);
+
+    registerItem(item);
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= todayISO()) Store.addWatch(item.id, date);
+
+    rebuildFilters();
+    renderHeaderStats();
+    updateTagline();
+    closeAdd();
+    $('#aQ').value = '';
+    $('#aResults').innerHTML = '';
+    showItem(item.id);
+    toast(`Added ${d.title}`);
+  } catch (e) {
+    console.error(e);
+    toast("Couldn't add that — " + (e.message || 'try again'));
+    go.disabled = false;
+    go.textContent = 'Add to my list';
+  }
+}
+
+/** Open the panel for one title, clearing filters if they hide it. */
+function showItem(id) {
+  render();
+  let i = visible.findIndex(m => m.id === id);
+  if (i === -1) {
+    $('#resetBtn').click();
+    i = visible.findIndex(m => m.id === id);
+  }
+  if (i !== -1) {
+    openModal(i);
+    const card = grid.querySelector(`.card[data-id="${id}"]`);
+    if (card) card.scrollIntoView({ block: 'center' });
+  }
+}
+
+function initListEditing() {
+  $('#addBtn').addEventListener('click', openAdd);
+
+  /* On a phone the + button floats in the corner. It can't float from
+     inside the sticky filter bar (that bar's blur effect pins anything
+     "fixed" to the bar itself), so it moves out to the page there. */
+  const phone = matchMedia('(max-width: 560px)');
+  const placeAdd = () => {
+    const b = $('#addBtn');
+    if (phone.matches) document.body.appendChild(b);
+    else $('.controls').prepend(b);
+  };
+  if (phone.addEventListener) phone.addEventListener('change', placeAdd);
+  placeAdd();
+  $('#aClose').addEventListener('click', closeAdd);
+  addOverlay.addEventListener('mousedown', e => { if (e.target === addOverlay) closeAdd(); });
+  $('#aQ').addEventListener('input', e => {
+    clearTimeout(addTimer);
+    $('#aPick').hidden = true;
+    $('#aResults').hidden = false;
+    const q = e.target.value;
+    addTimer = setTimeout(() => runSearch(q), 320);
+  });
+  $('#aQ').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { clearTimeout(addTimer); runSearch(e.target.value); }
+  });
+  $('#aResults').addEventListener('click', e => {
+    const b = e.target.closest('.add-hit');
+    if (b) pick(+b.dataset.tmdb);
+  });
+
+  $('#mProgSave').addEventListener('click', saveProgress);
+
+  $('#mRemove').addEventListener('click', async () => {
+    if (openIndex === -1 || READONLY) return;
+    const m = visible[openIndex];
+    if (!confirm(`Take “${m.title}” off your list? Its rating and watch dates go too.`)) return;
+    try {
+      await DB.removeFromList(B.me.id, m.id);
+    } catch (e) { toast("Couldn't remove it — try again"); return; }
+    unregisterItem(m.id);
+    closeModal();
+    rebuildFilters();
+    render();
+    renderHeaderStats();
+    updateTagline();
+    toast(`Removed ${m.title}`);
+  });
+
+  $('#mAddMine').addEventListener('click', async () => {
+    if (openIndex === -1 || !READONLY) return;
+    const m = visible[openIndex];
+    const btn = $('#mAddMine');
+    btn.disabled = true;
+    try {
+      await DB.addToList([{ user_id: B.me.id, title_id: m.id }], true);
+      btn.textContent = 'On your list';
+      toast(`Added ${m.title} to your list`);
+    } catch (e) {
+      btn.disabled = false;
+      toast("Couldn't add it — try again");
+    }
+  });
 }
 
 function syncDirBtn() {

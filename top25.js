@@ -63,9 +63,11 @@ function render() {
   $$('#roTop').textContent   = top.length ? fmtRating(Store.getRating(top[0].id)) : '--';
   $$('#roCut').textContent   = top.length === 25 ? fmtRating(Store.getRating(top[24].id)) : '--';
 
+  const vault = BOOT.readonly ? `${BOOT.viewing.username}'s vault` : 'the vault';
   $$('#heroSub').textContent = scope
-    ? `The highest rated ${scope.toLowerCase()} films in the vault`
-    : 'The highest rated films in the vault';
+    ? `The highest rated ${scope.toLowerCase()} films in ${vault}`
+    : `The highest rated films in ${vault}`;
+  if (BOOT.readonly) document.querySelector('.hero-eyebrow').textContent = `${BOOT.viewing.username}'s ranking`;
 
   /* ---- empty ---- */
   if (!list.length) {

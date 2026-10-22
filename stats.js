@@ -155,7 +155,7 @@ function sectionFor(col) {
     return `<div class="stats-block">${head}
       <div class="needs-ratings small">
         <h3>No ${col.many} listed yet</h3>
-        <p>Add them to <code>${col.file}</code> and every number on this page
+        <p>Once ${BOOT.readonly ? 'they add' : 'you add'} some with <b>+ Add</b>, every number on this page
            picks them up automatically.</p>
       </div></div>`;
   }
@@ -249,7 +249,7 @@ function sectionFor(col) {
       <div class="section-head"><h2>Top actors</h2></div>
       <p class="note">
         Ranked by the average of your ratings for their ${col.many}, counting only actors with
-        at least ${MIN_ACTOR_ITEMS} rated. Based on the billed leads in <code>cast.js</code>,
+        at least ${MIN_ACTOR_ITEMS} rated. Based on the top three billed actors,
         not the full cast.
       </p>
       ${actors.length ? `
@@ -270,8 +270,7 @@ function sectionFor(col) {
             </div>`).join('')}
         </div>
         <div class="chart-foot"><span class="swatch-gold"></span> highest average · bars run from 0 to 10</div>`
-        : `<p class="note">No actor has ${MIN_ACTOR_ITEMS} rated ${col.many} yet${
-             col.key === 'series' ? ' — series cast lives in cast.js too, keyed by the series title' : ''}.</p>`}
+        : `<p class="note">No actor has ${MIN_ACTOR_ITEMS} rated ${col.many} yet}.</p>`}
     </div>`;
 
   return html + '</div>';
@@ -299,6 +298,7 @@ function combinedTotal() {
 
 function render() {
   renderHeaderStats(window.MOVIES || []);
+  if (BOOT.readonly) $$('#gsub').textContent = `What ${BOOT.viewing.username}'s ratings and viewing habits add up to.`;
   content.innerHTML = combinedTotal() + COLLECTIONS.map(sectionFor).join('');
 }
 

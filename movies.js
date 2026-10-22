@@ -1,45 +1,12 @@
 /* ============================================================
-   SETTINGS
-   ------------------------------------------------------------
-   useLocalImages    Look for your own poster files first.
-                     Put them in the images/ folder, named after
-                     the film's id (see POSTER-FILENAMES.txt).
-   imageFolder       Folder name. Change it if you like.
-   imageExtensions   File types to try, in this order.
-   posterSources     Where to look for films you HAVEN'T supplied
-                     an image for, tried in this order:
+   LEGACY FILM LIST  -  used ONLY by import.html
 
-                       'tmdb'       The Movie Database. Best
-                                    coverage and the sharpest
-                                    artwork. Needs a free key -
-                                    see tmdbApiKey below.
-                       'wikipedia'  No key needed, but a lower
-                                    hit rate and softer images.
-
-                     Set it to [] to switch automatic lookup off
-                     entirely - the site then never touches the
-                     network and uses only your own images.
-
-   tmdbApiKey        Free from themoviedb.org: make an account,
-                     then Settings -> API -> request a key. Copy
-                     the "API Key (v3 auth)" value in here. You
-                     can also paste it into Settings on the site
-                     instead, which keeps it out of your repo.
-
-   lookupConcurrency How many lookups run at once. 4 is polite
-                     and quick. Lower it if you get rate limited.
+   Since the site went multi-member, lists live in the Supabase
+   database and are edited on the site itself (+ Add, Remove).
+   This file is kept so import.html can copy Bryce's original
+   list into his account once. Editing it no longer changes
+   the site. Settings moved to config.js.
    ============================================================ */
-
-const CONFIG = {
-  useLocalImages: true,
-  imageFolder: 'images',
-  imageExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-
-  posterSources: ['tmdb', 'wikipedia'],
-  tmdbApiKey: '',
-  lookupConcurrency: 4
-};
-
 
 /* ============================================================
    MOVIE DATA  -  this is the file you edit
@@ -607,6 +574,49 @@ Open Season 2|2008|76|Animation,Comedy,Adventure|Matthew O'Callaghan|
 Open Season 3|2010|84|Animation,Comedy,Adventure|Cody Cameron|
 The Housemaid|2025|0|Thriller,Drama|Paul Feig|The Housemaid (2025 film)
 Diary of a Wimpy Kid|2010|94|Comedy,Family|Thor Freudenthal|Diary of a Wimpy Kid (2010 film)
+
+# ---- fourth update ----
+Peaky Blinders: The Immortal Man|2026|0|Crime,Drama|Tom Harper|The Immortal Man
+Game Night|2018|100|Comedy,Crime,Mystery|Daley & Goldstein|Game Night (film)
+Dodgeball: A True Underdog Story|2004|92|Comedy,Sport|Rawson Marshall Thurber|
+Hancock|2008|92|Action,Comedy,Fantasy|Peter Berg|Hancock (film)
+Identity Thief|2013|111|Comedy,Crime|Seth Gordon|
+Vacation|2015|99|Comedy|Daley & Goldstein|Vacation (2015 film)
+Green Lantern|2011|114|Action,Sci-Fi,Adventure|Martin Campbell|Green Lantern (film)
+Batman v Superman: Dawn of Justice|2016|151|Action,Sci-Fi,Adventure|Zack Snyder|
+Suicide Squad|2016|123|Action,Adventure,Fantasy|David Ayer|Suicide Squad (film)
+The Suicide Squad|2021|132|Action,Adventure,Comedy|James Gunn|
+Justice League|2017|120|Action,Sci-Fi,Adventure|Zack Snyder|Justice League (film)
+The Batman|2022|176|Action,Crime,Drama|Matt Reeves|The Batman (film)
+The Flash|2023|144|Action,Sci-Fi,Adventure|Andy Muschietti|The Flash (film)
+Superman|2025|129|Action,Sci-Fi,Adventure|James Gunn|Superman (2025 film)
+The Hangover|2009|100|Comedy|Todd Phillips|
+The Hangover Part II|2011|102|Comedy|Todd Phillips|
+The Hangover Part III|2013|100|Comedy|Todd Phillips|
+National Treasure|2004|131|Action,Adventure,Mystery|Jon Turteltaub|National Treasure (film)
+The Rock|1996|136|Action,Thriller|Michael Bay|The Rock (film)
+The Mask of Zorro|1998|136|Action,Adventure,Western|Martin Campbell|
+First Blood|1982|93|Action,Thriller,Drama|Ted Kotcheff|
+Rambo: First Blood Part II|1985|96|Action,War|George P. Cosmatos|
+Home Alone|1990|103|Comedy,Family|Chris Columbus|Home Alone
+Home Alone 2: Lost in New York|1992|120|Comedy,Family|Chris Columbus|
+Don't Look Up|2021|138|Comedy,Drama,Sci-Fi|Adam McKay|Don't Look Up (2021 film)
+Leave the World Behind|2023|138|Thriller,Drama,Mystery|Sam Esmail|Leave the World Behind (film)
+First Man|2018|141|Biography,Drama,History|Damien Chazelle|First Man (film)
+The Grinch|2018|85|Animation,Comedy,Family|Mosier & Cheney|The Grinch (film)
+How the Grinch Stole Christmas|2000|104|Comedy,Family,Fantasy|Ron Howard|How the Grinch Stole Christmas (2000 film)
+American Psycho|2000|102|Horror,Thriller,Crime|Mary Harron|American Psycho (film)
+Mr. Bean's Holiday|2007|90|Comedy,Family,Adventure|Steve Bendelack|
+Johnny English Reborn|2011|101|Comedy,Action|Oliver Parker|
+Johnny English Strikes Again|2018|89|Comedy,Action|David Kerr|
+The Expendables|2010|103|Action,Thriller|Sylvester Stallone|The Expendables (2010 film)
+Mrs. Doubtfire|1993|125|Comedy,Drama,Family|Chris Columbus|
+Good Morning, Vietnam|1987|121|Comedy,Drama,War|Barry Levinson|
+2012|2009|158|Action,Sci-Fi,Thriller|Roland Emmerich|2012 (film)
+Murder Mystery|2019|97|Comedy,Crime,Mystery|Kyle Newacheck|Murder Mystery (film)
+Warcraft|2016|123|Fantasy,Action,Adventure|Duncan Jones|Warcraft (film)
+Bright|2017|117|Action,Fantasy,Crime|David Ayer|Bright (film)
+Unbroken|2014|137|Biography,War,Drama|Angelina Jolie|Unbroken (film)
 `;
 
 /* Parse the block above into objects. `id` is a stable slug used as the

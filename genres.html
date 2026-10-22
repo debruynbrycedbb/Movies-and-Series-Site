@@ -31,6 +31,7 @@
       <a href="top25.html">Top 25</a>
       <a href="genres.html" class="active">Genres</a>
       <a href="stats.html">Stats</a>
+      <a href="compare.html">Compare</a>
     </nav>
 
     <div class="header-stats">
@@ -50,9 +51,9 @@
   <div id="content"></div>
 </main>
 
-<script src="movies.js"></script>
-<script src="series.js"></script>
-<script src="core.js"></script>
-<script src="genres.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="db.js"></script>
+<script src="boot.js" data-scripts="core.js genres.js"></script>
 </body>
 </html>

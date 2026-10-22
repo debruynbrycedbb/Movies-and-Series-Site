@@ -4,12 +4,9 @@
    ============================================================ */
 
 const Store = (() => {
-  const K_RATINGS   = 'cinevault.ratings.v1';
   const K_POSTERS   = 'cinevault.posters.v1';
   const K_OVERRIDES = 'cinevault.posterOverrides.v1';
   const K_LOCAL     = 'cinevault.localPosters.v1';
-  const K_TMDB      = 'cinevault.tmdbKey';
-  const K_WATCHES   = 'cinevault.watches.v1';
 
   function read(key, fallback) {
     try {
@@ -46,15 +43,45 @@ const Store = (() => {
     try { sessionStorage.setItem(K_MISS, JSON.stringify(misses)); } catch (e) { /* noop */ }
   }
 
-  // ratings: { [id]: { r: 8.5, t: 1725500000000 } }
-  let ratings   = read(K_RATINGS, {});
+  /* Ratings and watch dates now live in the database. boot.js loaded the
+     list being viewed; changes update the page at once and are saved in
+     the background. If a save fails you get a message saying so. */
+  const B = window.BOOT || { ratings: {}, watches: {}, readonly: true, me: {} };
+  const ratings = B.ratings;      // { [id]: { r: 8.5, t: 1725500000000 } }
+  const watches = B.watches;      // { [id]: ['2026-09-05', ...] } newest first
+
   let posters   = read(K_POSTERS, {});
   let overrides = read(K_OVERRIDES, {});
   let local     = read(K_LOCAL, {});
-  // watches: { [id]: ['2026-09-05', '2024-01-12', ...] } newest first
-  let watches   = read(K_WATCHES, {});
+
+  /* ---- saving ---- */
+  let pending = 0;
+  function save(promise) {
+    pending++;
+    document.body.classList.add('saving');
+    return promise
+      .catch(e => {
+        console.error('[cinevault] save failed', e);
+        toast("Couldn't save that — check your connection and try again");
+      })
+      .finally(() => {
+        pending--;
+        if (!pending) document.body.classList.remove('saving');
+      });
+  }
+  window.addEventListener('beforeunload', e => {
+    if (pending) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  function canWrite() {
+    if (B.readonly) { toast("This is " + B.viewing.username + "'s list — you can only change your own"); return false; }
+    return true;
+  }
 
   return {
+    readonly: !!B.readonly,
+    isSaving() { return pending > 0; },
+
     /* ---- ratings ---- */
     getRating(id) {
       const e = ratings[id];
@@ -65,14 +92,16 @@ const Store = (() => {
       return e && e.t ? e.t : 0;
     },
     setRating(id, value) {
+      if (!canWrite()) return this.getRating(id);
       const v = Math.max(0, Math.min(10, Math.round(value * 10) / 10));
       ratings[id] = { r: v, t: Date.now() };
-      write(K_RATINGS, ratings);
+      save(DB.setRating(B.me.id, id, v));
       return v;
     },
     clearRating(id) {
+      if (!canWrite()) return;
       delete ratings[id];
-      write(K_RATINGS, ratings);
+      save(DB.setRating(B.me.id, id, null));
     },
     allRatings() { return ratings; },
     ratedCount() { return Object.keys(ratings).length; },
@@ -90,27 +119,32 @@ const Store = (() => {
       return list && list.length ? list[0] : null;
     },
     addWatch(id, date) {
+      if (!canWrite()) return false;
       const list = watches[id] ? watches[id].slice() : [];
       if (list.indexOf(date) !== -1) return false;      // already logged that day
       list.push(date);
       list.sort().reverse();                            // ISO dates sort as strings
       watches[id] = list;
-      write(K_WATCHES, watches);
+      save(DB.addWatch(B.me.id, id, date));
       return true;
     },
     removeWatch(id, date) {
+      if (!canWrite()) return;
       const list = watches[id];
       if (!list) return;
       const i = list.indexOf(date);
       if (i === -1) return;
       list.splice(i, 1);
       if (list.length) watches[id] = list; else delete watches[id];
-      write(K_WATCHES, watches);
+      save(DB.removeWatch(B.me.id, id, date));
     },
     clearWatches(id) {
+      if (!canWrite()) return;
       delete watches[id];
-      write(K_WATCHES, watches);
+      save(DB.clearWatches(B.me.id, id));
     },
+    /** Forget a title locally after it's been taken off the list. */
+    forget(id) { delete ratings[id]; delete watches[id]; },
     totalWatches() {
       return Object.values(watches).reduce((n, l) => n + l.length, 0);
     },
@@ -134,18 +168,6 @@ const Store = (() => {
     noLocalPoster(id) { return misses[id] === 1; },
     markNoLocalPoster: rememberMiss,
 
-    /* Your TMDB key, if you'd rather keep it out of the repo.
-       Lives in this browser only, like your ratings. */
-    getTmdbKey() {
-      try { return localStorage.getItem(K_TMDB) || ''; } catch (e) { return ''; }
-    },
-    setTmdbKey(key) {
-      try {
-        if (key) localStorage.setItem(K_TMDB, key);
-        else localStorage.removeItem(K_TMDB);
-      } catch (e) { /* noop */ }
-    },
-
     // a URL you typed in by hand - beats everything else
     getOverride(id) { return overrides[id] || ''; },
     setOverride(id, url) {
@@ -166,60 +188,20 @@ const Store = (() => {
     },
 
     /* ---- backup ---- */
-    exportData() {
+    /** A JSON copy of the list on screen, readable without the site. */
+    exportData(items) {
       return {
         app: 'cinevault',
-        version: 2,
+        version: 3,
+        member: B.viewing ? B.viewing.username : '',
         exportedAt: new Date().toISOString(),
-        ratings,
-        watches,
-        posterOverrides: overrides
+        titles: (items || []).map(m => ({
+          kind: m.kind, title: m.title, year: m.year, tmdb_id: m.tmdbId,
+          rating: this.getRating(m.id),
+          watched: this.getWatches(m.id),
+          ...(m.kind === 'series' ? { seasons: m.seasons, episodes: m.episodes } : {})
+        }))
       };
-    },
-    importData(obj, mode) {
-      if (!obj || typeof obj !== 'object' || (!obj.ratings && !obj.watches)) {
-        throw new Error('That file does not look like a CineVault backup.');
-      }
-      obj.ratings = obj.ratings || {};
-      const incoming = obj.ratings;
-      let added = 0;
-      if (mode === 'replace') {
-        ratings = {};
-      }
-      for (const [id, entry] of Object.entries(incoming)) {
-        const r = typeof entry === 'number' ? entry : (entry && entry.r);
-        if (typeof r !== 'number' || isNaN(r)) continue;
-        const t = (entry && entry.t) || Date.now();
-        // on merge, the newer rating wins
-        if (mode === 'merge' && ratings[id] && ratings[id].t > t) continue;
-        ratings[id] = { r: Math.max(0, Math.min(10, r)), t };
-        added++;
-      }
-      write(K_RATINGS, ratings);
-
-      // Watch dates merge as a union - a date logged on either device is kept.
-      let dates = 0;
-      if (obj.watches && typeof obj.watches === 'object') {
-        if (mode === 'replace') watches = {};
-        for (const [id, list] of Object.entries(obj.watches)) {
-          if (!Array.isArray(list)) continue;
-          const merged = new Set(watches[id] || []);
-          list.forEach(d => {
-            if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
-              if (!merged.has(d)) dates++;
-              merged.add(d);
-            }
-          });
-          if (merged.size) watches[id] = [...merged].sort().reverse();
-        }
-        write(K_WATCHES, watches);
-      }
-
-      if (obj.posterOverrides && typeof obj.posterOverrides === 'object') {
-        Object.assign(overrides, obj.posterOverrides);
-        write(K_OVERRIDES, overrides);
-      }
-      return { ratings: added, dates };
     }
   };
 })();
@@ -274,7 +256,7 @@ const Posters = (() => {
   }
 
   function tmdbKey() {
-    return (Store.getTmdbKey() || CONFIG.tmdbApiKey || '').trim();
+    return (CONFIG.tmdbApiKey || '').trim();
   }
 
   /* ---------- source: TMDB ---------- */
@@ -433,7 +415,7 @@ const Posters = (() => {
       if (!CONFIG.posterSources || !CONFIG.posterSources.length) {
         return { fetched: 0, found: 0 };
       }
-      const todo = movies.filter(m => !Store.hasPosterResult(m.id));
+      const todo = movies.filter(m => !m.poster && !Store.hasPosterResult(m.id));
       if (!todo.length) return { fetched: 0, found: 0 };
       return runQueue(todo, CONFIG.lookupConcurrency || 4);
     },
@@ -441,8 +423,8 @@ const Posters = (() => {
     /** One lookup per source, reporting exactly what happened. */
     async test(movie) {
       const subject = movie
-        || ALL_ITEMS.find(m => m.title === 'Inception')
-        || PAGE_ITEMS[0] || ALL_ITEMS[0];
+        || ALL_ITEMS.find(m => m.title === 'Inception' && !m.poster)
+        || { id: 'test', kind: 'movie', title: 'Inception', year: 2010, wiki: 'Inception' };
       const out = [];
 
       for (const name of CONFIG.posterSources) {
@@ -482,6 +464,20 @@ const Posters = (() => {
    dates, posters and backups all share one store. */
 const ALL_ITEMS = [].concat(window.MOVIES || [], window.SERIES || []);
 const ITEM_BY_ID = Object.fromEntries(ALL_ITEMS.map(m => [m.id, m]));
+
+/** A title just added with "+ Add" - make the shared lookups know it. */
+function registerItem(item) {
+  ITEM_BY_ID[item.id] = item;
+  ALL_ITEMS.push(item);
+  (item.kind === 'series' ? window.SERIES : window.MOVIES).push(item);
+  if (item.cast && item.cast.length) window.CAST[item.id] = item.cast;
+}
+function unregisterItem(id) {
+  const drop = arr => { const i = arr.findIndex(m => m.id === id); if (i !== -1) arr.splice(i, 1); };
+  drop(ALL_ITEMS); drop(window.MOVIES); drop(window.SERIES);
+  delete ITEM_BY_ID[id];
+  Store.forget(id);
+}
 const MOVIE_BY_ID = ITEM_BY_ID;          // old name, still used in places
 
 /* The collection this page is about. A page sets window.PAGE_ITEMS
@@ -567,8 +563,9 @@ function escapeHtml(s) {
 
      1. a URL you typed into the film's "set it manually" box
      2. your own image file in the images/ folder of the repo
-     3. the poster Wikipedia found automatically
-     4. a plain gradient tile with the title on it
+     3. the TMDB poster saved with the title in the database
+     4. a poster looked up automatically (TMDB search, then Wikipedia)
+     5. a plain gradient tile with the title on it
 
    Your own files always win, so you can override any film just
    by dropping images/<filename>.jpg into the repo.
@@ -587,13 +584,15 @@ function posterCandidates(movie) {
       list.push(known);
     } else if (!Store.noLocalPoster(movie.id)) {
       CONFIG.imageExtensions.forEach(ext => {
-        list.push(`${CONFIG.imageFolder}/${movie.id}.${ext}`);
+        list.push(`${CONFIG.imageFolder}/${movie.slug || movie.id}.${ext}`);
       });
     }
   }
 
+  if (movie.poster) list.push(movie.poster);
+
   const wiki = Store.getWikiPoster(movie.id);
-  if (wiki) list.push(wiki);
+  if (wiki && wiki !== movie.poster) list.push(wiki);
 
   return list;
 }

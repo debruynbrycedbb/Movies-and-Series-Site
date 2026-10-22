@@ -98,8 +98,7 @@ function sectionHtml(col) {
     return `<div class="section">${head}
       <div class="needs-ratings small">
         <h3>No ${col.many} listed yet</h3>
-        <p>Add them to <code>${col.key === 'series' ? 'series.js' : 'movies.js'}</code>
-           and their genres appear here automatically.</p>
+        <p>Once ${BOOT.readonly ? 'they add' : 'you add'} some with <b>+ Add</b>, their genres appear here automatically.</p>
       </div></div>`;
   }
 
@@ -153,8 +152,8 @@ function render() {
 
   const totals = COLLECTIONS.map(c => c.items.length);
   $$('#gsub').textContent = totals[1]
-    ? `My highest rated film and series in every genre — ${totals[0]} films and ${totals[1]} series.`
-    : 'My highest rated film in every genre.';
+    ? `${BOOT.whose} highest rated film and series in every genre — ${totals[0]} films and ${totals[1]} series.`
+    : `${BOOT.whose} highest rated film in every genre.`;
 
   content.innerHTML = COLLECTIONS.map(sectionHtml).join('');
 }
