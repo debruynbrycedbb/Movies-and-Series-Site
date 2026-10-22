@@ -71,7 +71,7 @@
       genres: t.genres || [],
       director: t.director || '',
       cast: t.cast_names || [],
-      poster: TMDB.posterUrl(t.poster_path, 'w500'),
+      poster: TMDB.posterUrl(t.poster_path, 'w342'),   // plenty for a card, half the memory of w500
       wiki: t.wiki || t.title,
       order: index
     };
@@ -160,6 +160,20 @@
   // TMDB's short blue logo, drawn as text so there's no extra file to upload
   const TMDB_LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 30"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#90cea1"/><stop offset=".56" stop-color="#3cbec9"/><stop offset="1" stop-color="#00b3e5"/></linearGradient></defs><rect width="160" height="30" rx="15" fill="url(#g)"/><text x="80" y="21" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" fill="#0d253f" text-anchor="middle">TMDB</text></svg>`;
 
+  /* ---------- redirect-loop guard ---------- */
+
+  // login.js notes the moment you signed in. Landing here "not signed in"
+  // seconds later means the sign-in didn't stick, so say so instead of
+  // bouncing back and forth between the two pages.
+  const SIGNED_IN_KEY = 'cinevaultSignedInAt';
+  function bounced() {
+    try {
+      const t = +sessionStorage.getItem(SIGNED_IN_KEY) || 0;
+      sessionStorage.removeItem(SIGNED_IN_KEY);
+      return Date.now() - t < 20000;
+    } catch (e) { return false; }
+  }
+
   /* ---------- go ---------- */
 
   async function run() {
@@ -172,10 +186,19 @@
       return;
     }
     if (!me) {
+      // Safety net: if this browser keeps getting bounced to the sign-in
+      // page (sign-in not sticking), stop and explain rather than loop.
+      if (bounced()) {
+        fail("You signed in, but this browser isn't keeping you signed in. " +
+             "Private/incognito windows and 'block all cookies' settings can cause this — " +
+             'try a normal window, or allow site data for this site.', true);
+        return;
+      }
       const next = (location.pathname.split('/').pop() || 'index.html') + location.search;
       location.replace('login.html?next=' + encodeURIComponent(next));
       return;
     }
+    try { sessionStorage.removeItem(SIGNED_IN_KEY); } catch (e) { /* noop */ }
 
     try {
       const members = await DB.members();

@@ -304,6 +304,7 @@ function render() {
 
 render();
 
-window.addEventListener('storage', e => {
-  if (e.key && e.key.startsWith('cinevault.')) location.reload();
-});
+/* (No "reload when another tab changes something" here any more. Ratings
+   live in the database now, and that listener also fired on the poster
+   cache and the sign-in session, so two open tabs reloaded each other
+   endlessly.) */

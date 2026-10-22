@@ -37,6 +37,11 @@
     }
   }
 
+  /** Lets boot.js spot a sign-in that didn't stick (see there). */
+  function markSignedIn() {
+    try { sessionStorage.setItem('cinevaultSignedInAt', String(Date.now())); } catch (e) { /* noop */ }
+  }
+
   /* ---------- tabs ---------- */
 
   const HEADS = {
@@ -135,7 +140,7 @@
     try {
       await DB.ensureSession();
       const res = await DB.login($('#inUser').value.trim(), $('#inPin').value);
-      if (res === 'ok') { location.replace(next); return; }
+      if (res === 'ok') { markSignedIn(); location.replace(next); return; }
       busy(form, false);
       if (res === 'wrong') { $('#inPin').value = ''; invalid('#inPin', MESSAGES.wrong); return; }
       show(MESSAGES[res] || 'Something went wrong (' + res + ').');
@@ -161,6 +166,7 @@
       await DB.ensureSession();
       const res = await DB.register(user, $('#jPin').value, $('#jCode').value);
       if (res === 'ok') {
+        markSignedIn();
         show('Welcome, ' + user + '! Opening your vault…', 'ok');
         setTimeout(() => location.replace(next), 600);
         return;

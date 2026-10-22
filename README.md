@@ -50,7 +50,7 @@ in a public website.
 ### 4. Upload the files to GitHub
 
 Replace everything in your repository with the files in this zip. Every page now loads
-its files with a version tag (`?v=14`), so browsers pick up the new copies straight away
+its files with a version tag (`?v=15`), so browsers pick up the new copies straight away
 instead of showing an old cached one. The images folder
 stays as it is, so keep any posters you've already uploaded.
 
