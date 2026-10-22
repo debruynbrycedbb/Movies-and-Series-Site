@@ -10,71 +10,149 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<!-- the sign-in page carries all of its own styling -->
+<link rel="stylesheet" href="login.css?v=14">
 </head>
-<body class="login-page">
+<body class="auth">
 
-<main class="login-wrap">
-  <div class="login-brand">
-    <span class="brand-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#08090d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20M7 4v5M17 4v5"/>
-      </svg>
-    </span>
-    <span class="brand-text">Bryce's Cine<em>Vault</em></span>
-  </div>
+<div class="auth-glow" aria-hidden="true"></div>
 
-  <div class="login-card">
-    <div class="segmented login-tabs" role="tablist">
-      <button data-tab="in" class="on" role="tab">Sign in</button>
-      <button data-tab="join" role="tab">Join</button>
+<main class="auth-shell">
+
+  <!-- left: what this is (hidden on phones) -->
+  <section class="auth-intro">
+    <a class="auth-brand" href="login.html">
+      <span class="auth-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#08090d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20M7 4v5M17 4v5"/>
+        </svg>
+      </span>
+      <span>Bryce's Cine<em>Vault</em></span>
+    </a>
+
+    <h1 class="auth-headline">Every film you've seen,<br><span>rated and remembered.</span></h1>
+    <p class="auth-lede">A private vault for friends and family. Keep your own list, then see how your taste stacks up against everyone else's.</p>
+
+    <ul class="auth-points">
+      <li>
+        <span class="ap-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.6.8-4.9 4.6 1.3 6.8L12 17.3 6.1 20.5l1.3-6.8L2.5 9.1l6.6-.8z"/></svg></span>
+        <div><b>Rate to the decimal</b><span>Scores from 0 to 10, in steps of 0.1.</span></div>
+      </li>
+      <li>
+        <span class="ap-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span>
+        <div><b>Log every rewatch</b><span>A dated history for each film and series.</span></div>
+      </li>
+      <li>
+        <span class="ap-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M15 14.6a5 5 0 0 1 6.5 4.9"/></svg></span>
+        <div><b>Compare tastes</b><span>See where you agree, and what to watch next.</span></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- right: the card -->
+  <section class="auth-panel">
+    <a class="auth-brand compact" href="login.html">
+      <span class="auth-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#08090d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="M2 9h20M7 4v5M17 4v5"/>
+        </svg>
+      </span>
+      <span>Bryce's Cine<em>Vault</em></span>
+    </a>
+
+    <div class="auth-card">
+      <div class="auth-tabs" role="tablist">
+        <button type="button" data-tab="in" class="on" role="tab" aria-selected="true">Sign in</button>
+        <button type="button" data-tab="join" role="tab" aria-selected="false">Join</button>
+        <span class="auth-tab-ink" aria-hidden="true"></span>
+      </div>
+
+      <div class="auth-head">
+        <h2 id="authTitle">Welcome back</h2>
+        <p id="authSub">Sign in with your username and PIN.</p>
+      </div>
+
+      <!-- sign in -->
+      <form id="inForm" class="auth-form" autocomplete="on" novalidate>
+        <div class="field">
+          <label for="inUser">Username</label>
+          <div class="control">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="inUser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. bryce" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="inPin">PIN</label>
+          <div class="control">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="inPin" name="pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" required>
+            <button type="button" class="reveal" data-for="inPin" aria-label="Show PIN"></button>
+          </div>
+        </div>
+
+        <button class="auth-btn" type="submit"><span>Sign in</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <!-- join -->
+      <form id="joinForm" class="auth-form" autocomplete="off" novalidate hidden>
+        <div class="field">
+          <label for="jCode">Family code</label>
+          <div class="control">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M16 7l3 3M14 9l2 2"/></svg>
+            <input id="jCode" type="password" autocomplete="off" placeholder="From Bryce" required>
+            <button type="button" class="reveal" data-for="jCode" aria-label="Show code"></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="jUser">Username</label>
+          <div class="control">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="jUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" placeholder="Pick a name" required>
+          </div>
+          <p class="hint" id="userHint">2–20 characters: letters, numbers, - or _. Other members will see it.</p>
+        </div>
+
+        <div class="field-pair">
+          <div class="field">
+            <label for="jPin">PIN</label>
+            <div class="control">
+              <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input id="jPin" type="password" inputmode="numeric" autocomplete="new-password" placeholder="4+ characters" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="jPin2">Confirm PIN</label>
+            <div class="control">
+              <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input id="jPin2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Again" required>
+              <span class="match" id="pinMatch" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+        <p class="hint">No email on file — if you forget your PIN, Bryce can reset it.</p>
+
+        <button class="auth-btn" type="submit"><span>Create my vault</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <div class="auth-msg" id="msg" role="alert" hidden></div>
     </div>
 
-    <form id="inForm" autocomplete="on">
-      <p class="login-lede">Welcome back. Sign in with your name and PIN.</p>
-      <label class="lf">
-        <span>Username</span>
-        <input name="username" id="inUser" autocomplete="username" autocapitalize="none" spellcheck="false" required>
-      </label>
-      <label class="lf">
-        <span>PIN</span>
-        <input name="pin" id="inPin" type="password" inputmode="numeric" autocomplete="current-password" required>
-      </label>
-      <button class="btn btn-primary lbtn" type="submit">Sign in</button>
-    </form>
-
-    <form id="joinForm" autocomplete="off" hidden>
-      <p class="login-lede">Members only. You'll need the family code from Bryce.</p>
-      <label class="lf">
-        <span>Family code</span>
-        <input id="jCode" type="password" autocomplete="off" required>
-      </label>
-      <label class="lf">
-        <span>Pick a username</span>
-        <input id="jUser" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" required>
-        <small>2–20 characters: letters, numbers, - or _. Other members will see it.</small>
-      </label>
-      <label class="lf">
-        <span>Pick a PIN</span>
-        <input id="jPin" type="password" inputmode="numeric" autocomplete="new-password" required>
-        <small>At least 4 characters. There's no email, so if you forget it, ask Bryce to reset it.</small>
-      </label>
-      <label class="lf">
-        <span>PIN again</span>
-        <input id="jPin2" type="password" inputmode="numeric" autocomplete="new-password" required>
-      </label>
-      <button class="btn btn-primary lbtn" type="submit">Create my vault</button>
-    </form>
-
-    <div class="login-msg" id="msg" role="alert" hidden></div>
-  </div>
-
-  <p class="login-foot">No email, no personal details — just a name and a PIN.</p>
+    <p class="auth-foot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Members only. No email or personal details — just a name and a PIN.
+    </p>
+  </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="db.js"></script>
-<script src="login.js"></script>
+<script src="config.js?v=14"></script>
+<script src="db.js?v=14"></script>
+<script src="login.js?v=14"></script>
 </body>
 </html>

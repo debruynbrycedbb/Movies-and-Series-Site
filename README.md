@@ -49,7 +49,9 @@ in a public website.
 
 ### 4. Upload the files to GitHub
 
-Replace everything in your repository with the files in this zip. The images folder
+Replace everything in your repository with the files in this zip. Every page now loads
+its files with a version tag (`?v=14`), so browsers pick up the new copies straight away
+instead of showing an old cached one. The images folder
 stays as it is, so keep any posters you've already uploaded.
 
 New files: `config.js`, `db.js`, `boot.js`, `login.html`, `login.js`, `compare.html`,
@@ -219,7 +221,7 @@ or use **⚙ → Refresh posters**.
 | `config.js` | Supabase address, publishable key and TMDB key. Safe to publish. |
 | `db.js` | Everything that reads or writes the database, plus TMDB search. |
 | `boot.js` | Runs first on every page. Checks you're signed in, loads the list being viewed, adds the member bar. |
-| `login.html`, `login.js` | Sign in and Join. |
+| `login.html`, `login.css`, `login.js` | Sign in and Join. The page has its own stylesheet. |
 | `index.html`, `series.html`, `library.js` | The Movies and Series pages. |
 | `top25.*`, `genres.*`, `stats.*` | Top 25, best per genre, statistics. |
 | `compare.html`, `compare.js` | Side-by-side comparison of two members. |

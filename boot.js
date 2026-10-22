@@ -19,6 +19,9 @@
   const me_script = document.currentScript;
   const opts = me_script.dataset;
   const scripts = (opts.scripts || '').split(/\s+/).filter(Boolean);
+  // a ?v=NN on boot.js is passed on to every script it loads, so a new
+  // upload is picked up straight away instead of an old cached copy
+  const version = new URL(me_script.src, location.href).searchParams.get('v');
   const pageKind = opts.kind || '';              // 'movie' | 'series' | ''
   const skipList = opts.list === 'none';         // compare page loads its own
 
@@ -77,7 +80,7 @@
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = src;
+      s.src = version ? src + '?v=' + version : src;
       s.onload = resolve;
       s.onerror = () => reject(new Error('Could not load ' + src));
       document.body.appendChild(s);
