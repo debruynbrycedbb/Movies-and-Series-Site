@@ -72,6 +72,7 @@
   });
   // login.html#join opens straight on the Join tab - handy to send people
   setTab(location.hash === '#join' ? 'join' : 'in', false);
+  window.addEventListener('hashchange', () => setTab(location.hash === '#join' ? 'join' : 'in', true));
 
   /* ---------- show / hide PIN ---------- */
 

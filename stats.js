@@ -5,26 +5,21 @@
    over your series. The two blocks are identical in shape, so
    one set of functions builds both.
 
-   Two kinds of number live on this page:
+   What each part counts:
 
-   - Time watched counts EVERY title in the collection once,
-     whether or not you've rated it, plus one extra viewing for
-     each date in its watch history beyond the first. So the
-     number starts at "I've seen all of these once" and grows as
-     you log rewatches. For a series, its length is episodes x
-     average episode minutes.
+   - Time watched: EVERY title once, rated or not, plus one extra
+     viewing for each logged date beyond the first. For a series,
+     its length is episodes x average episode minutes.
 
-   - Everything else is rating-based and only counts titles you
-     have actually scored.
+   - Top genres and Top actors: ranked by how many titles you've
+     seen (everything on the list), with the average rating of the
+     ones you've scored shown beside it.
 
-   Averages over a group of one or two titles are noise, so
-   decades, genres and actors need a minimum to be ranked. The
-   thresholds are right here:
+   - Best decade: ranked by average rating, so only scored titles
+     count, and a decade needs a minimum to take the top spot:
    ============================================================ */
 
 const MIN_DECADE_ITEMS = 3;
-const MIN_GENRE_ITEMS  = 3;
-const MIN_ACTOR_ITEMS  = 3;
 
 const $$ = sel => document.querySelector(sel);
 const content = $$('#content');
@@ -80,24 +75,36 @@ function byDecade(rated) {
     .sort((a, b) => b.avg - a.avg || a.sortKey - b.sortKey);
 }
 
-function byGenre(rated) {
-  const buckets = {};
-  rated.forEach(m => m.genres.forEach(g => (buckets[g] = buckets[g] || []).push(m)));
-  return Object.entries(buckets)
-    .map(([g, items]) => ({ key: g, ...group(items) }))
-    .sort((a, b) => b.avg - a.avg || a.key.localeCompare(b.key));
+/** Seen-count + average rating for a bucket of titles.
+    n = every title on the list (seen), rated = those with a score. */
+function seenGroup(items) {
+  const scores = items.map(m => Store.getRating(m.id)).filter(r => r !== null);
+  return { n: items.length, rated: scores.length, avg: scores.length ? mean(scores) : null, films: items };
 }
 
-function byActor(rated) {
+/** Most watched first; ties go to the better average, then A-Z. */
+function bySeen(a, b) {
+  return b.n - a.n || (b.avg ?? -1) - (a.avg ?? -1) || a.key.localeCompare(b.key);
+}
+
+function byGenre(items) {
   const buckets = {};
-  rated.forEach(m => {
+  items.forEach(m => m.genres.forEach(g => (buckets[g] = buckets[g] || []).push(m)));
+  return Object.entries(buckets)
+    .map(([g, list]) => ({ key: g, ...seenGroup(list) }))
+    .sort(bySeen);
+}
+
+function byActor(items) {
+  const buckets = {};
+  items.forEach(m => {
     ((window.CAST || {})[m.id] || []).forEach(name => {
       (buckets[name] = buckets[name] || []).push(m);
     });
   });
   return Object.entries(buckets)
-    .map(([name, items]) => ({ key: name, ...group(items) }))
-    .sort((a, b) => b.avg - a.avg || b.n - a.n || a.key.localeCompare(b.key));
+    .map(([name, list]) => ({ key: name, ...seenGroup(list) }))
+    .sort(bySeen);
 }
 
 function watchTime(items) {
@@ -137,6 +144,38 @@ function barChart(rows, min, noun) {
             <span class="swatch-gold"></span> highest average · bars run from 0 to 10
             ${min ? `· faded rows have fewer than ${min} rated ${noun.many} and aren't ranked` : ''}
           </div>`;
+}
+
+/** Ranked table: position, name, a bar for how many you've seen (from
+    zero, against the most-watched row), the count, and the average of
+    the ones you've rated. `detail` adds a second line under the name. */
+function seenTable(rows, noun, firstCol, detail) {
+  if (!rows.length) return '';
+  const max = rows[0].n || 1;
+  const plural = n => n === 1 ? noun.one : noun.many;
+  return `
+    <div class="seen-table">
+      <div class="seen-row seen-head">
+        <span></span><span>${firstCol}</span><span></span>
+        <span>Seen</span><span>Avg rating</span>
+      </div>
+      ${rows.map((r, i) => `
+        <div class="seen-row ${i === 0 ? 'top' : ''}"
+             title="${escapeHtml(r.key)}: ${r.n} ${plural(r.n)} seen${r.avg !== null ? `, average ${fmtRating(r.avg)} from ${r.rated} rated` : ', none rated yet'}">
+          <span class="rk">${String(i + 1).padStart(2, '0')}</span>
+          <span class="nm-wrap">
+            <span class="nm">${escapeHtml(r.key)}</span>
+            ${detail ? `<span class="films">${detail(r)}</span>` : ''}
+          </span>
+          <span class="track"><i style="width:${(r.n / max * 100).toFixed(1)}%"></i></span>
+          <span class="cnt"><b>${r.n}</b> ${plural(r.n)}</span>
+          <span class="sc" style="color:${r.avg === null ? 'var(--dim)' : ratingColor(r.avg)}">
+            ${r.avg === null ? '—' : fmtRating(r.avg)}
+            <small>${r.rated ? r.rated + ' rated' : 'unrated'}</small>
+          </span>
+        </div>`).join('')}
+    </div>
+    <div class="chart-foot"><span class="swatch-gold"></span> most watched · bars show how many you've seen, from zero</div>`;
 }
 
 /* ---------- one collection's whole block ---------- */
@@ -199,78 +238,58 @@ function sectionFor(col) {
       </div>
     </div>`;
 
+  const who = BOOT.readonly ? BOOT.viewing.username : 'you';
+  const whoHas = BOOT.readonly ? `${BOOT.viewing.username} has` : "you've";
+
+  /* genres - by how many seen */
+  const genres = byGenre(items);
+  html += `
+    <div class="section">
+      <div class="section-head"><h2>Top genres</h2></div>
+      <p class="note">
+        Every genre ranked by how many ${col.many} ${whoHas} seen in it, with the average
+        rating of the ones ${who === 'you' ? "you've" : 'they have'} scored. A title counts towards every genre it carries.
+      </p>
+      ${genres.length ? seenTable(genres, noun, 'Genre') : `<p class="note">No genres listed yet.</p>`}
+    </div>`;
+
+  /* actors - by how many seen */
+  const actors = byActor(items).slice(0, 20);
+  html += `
+    <div class="section">
+      <div class="section-head"><h2>Top actors</h2></div>
+      <p class="note">
+        The 20 actors ${who === 'you' ? "you've" : `${escapeHtml(who)} has`} seen most, ranked by how many of
+        ${who === 'you' ? 'your' : 'their'} ${col.many} they're in, with the average rating of those
+        ${col.many}. Based on the top three billed actors, not the full cast.
+      </p>
+      ${actors.length ? seenTable(actors, noun, 'Actor', a => escapeHtml(
+          a.films.slice()
+            .sort((x, y) => (Store.getRating(y.id) ?? -1) - (Store.getRating(x.id) ?? -1))
+            .slice(0, 3).map(m => m.title).join(', ')) + (a.n > 3 ? ' …' : ''))
+        : `<p class="note">No cast listed for these ${col.many} yet.</p>`}
+    </div>`;
+
+  /* decade - by rating, so it needs some scores */
   if (!R.length) {
     return html + `
       <div class="needs-ratings small">
-        <h3>Rate some ${col.many} to unlock the rest</h3>
-        <p>Best decade, genre and actors all come from the scores you give. The time
-           above already counts everything, so that part works from day one.</p>
-        <a class="btn btn-primary" href="${col.href}">Go to ${col.label.toLowerCase()}</a>
+        <h3>Rate some ${col.many} to find the best decade</h3>
+        <p>Best decade comes from the scores ${who === 'you' ? 'you give' : 'they give'}. Everything above already works.</p>
+        ${BOOT.readonly ? '' : `<a class="btn btn-primary" href="${col.href}">Go to ${col.label.toLowerCase()}</a>`}
       </div></div>`;
   }
-
-  /* decade */
   const decades = byDecade(R);
   const thinDecades = decades.filter(d => d.n < MIN_DECADE_ITEMS);
   html += `
     <div class="section">
       <div class="section-head"><h2>Best decade</h2></div>
       <p class="note">
-        Average of your ratings for the ${col.many} you've scored from each decade. A decade
+        Average of the ratings for the ${col.many} scored from each decade. A decade
         needs at least ${MIN_DECADE_ITEMS} rated ${col.many} to take the top spot${thinDecades.length
           ? `, which rules out ${thinDecades.map(d => escapeHtml(d.key)).join(', ')} for now` : ''}.
       </p>
       ${barChart(decades, MIN_DECADE_ITEMS, noun)}
-    </div>`;
-
-  /* genre */
-  const genresAll = byGenre(R);
-  const genres = genresAll.filter(g => g.n >= MIN_GENRE_ITEMS);
-  const thinGenres = genresAll.filter(g => g.n < MIN_GENRE_ITEMS);
-  html += `
-    <div class="section">
-      <div class="section-head"><h2>Best genre</h2></div>
-      <p class="note">
-        Genres need at least ${MIN_GENRE_ITEMS} rated ${col.many} to be ranked — one 10/10
-        shouldn't crown a genre. Titles count towards every genre they carry.
-        ${thinGenres.length ? `${thinGenres.length} genre${thinGenres.length === 1 ? '' : 's'} below the threshold: ` +
-          thinGenres.map(g => escapeHtml(g.key)).join(', ') + '.' : ''}
-      </p>
-      ${genres.length
-        ? barChart(genres, 0, noun)
-        : `<p class="note">No genre has ${MIN_GENRE_ITEMS} rated ${col.many} yet.</p>`}
-    </div>`;
-
-  /* actors */
-  const actorsAll = byActor(R);
-  const actors = actorsAll.filter(a => a.n >= MIN_ACTOR_ITEMS).slice(0, 15);
-  html += `
-    <div class="section">
-      <div class="section-head"><h2>Top actors</h2></div>
-      <p class="note">
-        Ranked by the average of your ratings for their ${col.many}, counting only actors with
-        at least ${MIN_ACTOR_ITEMS} rated. Based on the top three billed actors,
-        not the full cast.
-      </p>
-      ${actors.length ? `
-        <div class="actor-list">
-          ${actors.map((a, i) => `
-            <div class="actor ${i === 0 ? 'top' : ''}">
-              <div class="rk">${String(i + 1).padStart(2, '0')}</div>
-              <div>
-                <div class="nm">${escapeHtml(a.key)}</div>
-                <div class="films">${a.n} ${a.n === 1 ? col.one : col.many} · ${escapeHtml(
-                  a.films.slice()
-                    .sort((x, y) => Store.getRating(y.id) - Store.getRating(x.id))
-                    .slice(0, 3).map(m => m.title).join(', ')
-                )}${a.n > 3 ? ' …' : ''}</div>
-              </div>
-              <div class="track"><i style="width:${(a.avg / 10 * 100).toFixed(1)}%"></i></div>
-              <div class="sc" style="color:${ratingColor(a.avg)}">${fmtRating(a.avg)}</div>
-            </div>`).join('')}
-        </div>
-        <div class="chart-foot"><span class="swatch-gold"></span> highest average · bars run from 0 to 10</div>`
-        : `<p class="note">No actor has ${MIN_ACTOR_ITEMS} rated ${col.many} yet}.</p>`}
     </div>`;
 
   return html + '</div>';

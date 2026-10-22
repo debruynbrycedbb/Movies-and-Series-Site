@@ -89,34 +89,45 @@
 
   /* ---------- member bar ---------- */
 
+  /* Every member as a chip - one tap to see their list. You come first. */
   function memberBar(B) {
     const bar = document.createElement('div');
     bar.className = 'member-bar' + (B.readonly ? ' viewing-other' : '');
-    const opt = B.members.map(m =>
-      `<option value="${m.username}" ${m.id === B.viewing.id ? 'selected' : ''}>` +
-      `${m.id === B.me.id ? m.username + ' (you)' : m.username}</option>`).join('');
+    const page = location.pathname.split('/').pop() || 'index.html';
+    const people = [B.me].concat(B.members.filter(m => m.id !== B.me.id));
+
+    const chips = people.map(m => {
+      const mine = m.id === B.me.id;
+      const on = m.id === B.viewing.id;
+      return `<a class="mb-chip ${on ? 'on' : ''} ${mine ? 'me' : ''}"
+                 href="${withUser(page, mine ? null : m.username)}"
+                 ${on ? 'aria-current="page"' : ''}
+                 title="${mine ? 'Your list' : escapeText(m.username) + "'s list"}">
+          <span class="mb-av">${escapeText(m.username.charAt(0).toUpperCase())}</span>
+          <span class="mb-name">${escapeText(m.username)}</span>${mine ? '<span class="mb-you">you</span>' : ''}
+        </a>`;
+    }).join('');
 
     bar.innerHTML = `
       <div class="mb-inner">
-        <label class="mb-view">
-          <span class="mb-label">${B.readonly ? 'Viewing' : 'List'}</span>
-          <select id="memberPick" aria-label="Whose list to view">${opt}</select>
-        </label>
+        <span class="mb-label">${B.readonly ? 'Viewing' : 'Lists'}</span>
+        <nav class="mb-chips" aria-label="Members' lists">${chips}</nav>
         ${B.readonly
-          ? `<span class="mb-note">Read-only — this is ${escapeText(B.viewing.username)}'s list.
-               <a href="${withUser(location.pathname.split('/').pop() || 'index.html', null)}">Back to mine</a></span>`
-          : `<span class="mb-note">Signed in as <b>${escapeText(B.me.username)}</b></span>`}
+          ? `<span class="mb-note"><span class="mb-ro">Read-only</span>
+               <a href="${withUser(page, null)}">Back to mine</a></span>`
+          : `<span class="mb-note">${B.members.length} member${B.members.length === 1 ? '' : 's'}</span>`}
       </div>`;
 
     const header = document.querySelector('.site-header');
     if (header) header.insertAdjacentElement('afterend', bar);
     else document.body.prepend(bar);
 
-    bar.querySelector('#memberPick').addEventListener('change', e => {
-      const u = e.target.value;
-      const page = location.pathname.split('/').pop() || 'index.html';
-      location.href = withUser(page, u === B.me.username ? null : u);
-    });
+    // on a phone the chips scroll sideways - keep the selected one in view
+    const on = bar.querySelector('.mb-chip.on');
+    const strip = bar.querySelector('.mb-chips');
+    if (on && strip.scrollWidth > strip.clientWidth) {
+      strip.scrollLeft = on.offsetLeft - strip.offsetLeft - 12;
+    }
   }
 
   function escapeText(s) {
@@ -246,7 +257,7 @@
       B.withUser = withUser;
 
       document.body.classList.toggle('readonly', B.readonly);
-      memberBar(B);
+      if (!skipList) memberBar(B);      // compare/import have their own pickers
       rewriteNav(B);
       footer();
 

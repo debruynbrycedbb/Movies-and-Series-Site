@@ -50,7 +50,7 @@ in a public website.
 ### 4. Upload the files to GitHub
 
 Replace everything in your repository with the files in this zip. Every page now loads
-its files with a version tag (`?v=15`), so browsers pick up the new copies straight away
+its files with a version tag (`?v=16`), so browsers pick up the new copies straight away
 instead of showing an old cached one. The images folder
 stays as it is, so keep any posters you've already uploaded.
 
@@ -99,10 +99,10 @@ own name and PIN.
 
 ### Other people's lists
 
-Use the **List** dropdown under the menu to switch to someone else's list. Every page
-then shows their list: Movies, Series, Top 25, Genres and Stats. The bar turns purple
-so you know you're looking at someone else's list, and **Back to mine** returns you to
-yours.
+Every member is shown as a name chip in the bar under the menu. Tap a name to switch
+to their list. Every page then shows their list: Movies, Series, Top 25, Genres and
+Stats. The bar turns purple so you know you're looking at someone else's list, and
+**Back to mine** (or your own chip) returns you to yours.
 
 On someone else's list:
 
@@ -110,17 +110,30 @@ On someone else's list:
 - **+ Add to my list** copies that title onto yours.
 - **Also on** shows what every other member rated the same title.
 
+### Stats
+
+- **Top genres** and **Top actors** are ranked by how many titles you've seen, so the
+  genre or actor you watch most comes first. Each row also shows the average rating
+  of the ones you've rated.
+- Films and series each get their own section.
+- **Best decade** is still ranked by average rating.
+
 ### Compare
 
-Pick any two members and Movies or Series. The page shows:
+The page is split down the middle: one person on the left, the other on the right, with
+the **taste match** between them. Pick either person from their name at the top, and
+switch between Movies and Series. Sections:
 
-- how many titles each of you has, and how many you've both seen
-- **Taste match**: how close your scores are on titles you've both rated. 100% means
-  identical scores. It needs at least 3 titles you've both rated.
-- average ratings per genre, side by side
-- where you disagree most, and where you agree
-- each person's highly rated titles the other hasn't seen, with a **+ My list**
-  button
+- **Total watch time**: films, series and everything combined, side by side, with who
+  has watched more.
+- **At a glance**: titles seen, rated, average rating and rewatches.
+- **Genres**: every genre, ranked by how many titles you've both seen in it, with each
+  person's count and average rating.
+- **Where you disagree most**: titles you've both rated, biggest gap in score first.
+  **Show all** lists every one.
+- **Where you agree**: titles rated within half a point of each other.
+- **Favourites the other hasn't seen**: each person's 7+ titles missing from the other
+  list, with a **+ My list** button.
 
 ### Account (⚙)
 

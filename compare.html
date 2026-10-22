@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -40,13 +40,31 @@
 <main class="wrap">
   <div class="page-head">
     <h1>Compare</h1>
-    <p id="csub">Put two lists side by side — what you share, where you agree, and what to watch next.</p>
+    <p id="csub">Two lists side by side — what you share, where you differ, and what to watch next.</p>
   </div>
 
-  <div class="compare-bar">
-    <label class="cpick"><span class="cdot a"></span><select id="pickA" aria-label="First member"></select></label>
-    <span class="cvs">vs</span>
-    <label class="cpick"><span class="cdot b"></span><select id="pickB" aria-label="Second member"></select></label>
+  <!-- the split: one person each side, the shared numbers down the middle -->
+  <div class="vs-head" id="vsHead">
+    <div class="vs-side a">
+      <span class="vs-av" id="avA"></span>
+      <div class="vs-who">
+        <label class="vs-pick"><select id="pickA" aria-label="Left-hand member"></select></label>
+        <span class="vs-sub" id="subA"></span>
+      </div>
+    </div>
+    <div class="vs-mid">
+      <div class="vs-match" id="match"><b>--</b><span>taste match</span></div>
+    </div>
+    <div class="vs-side b">
+      <div class="vs-who">
+        <label class="vs-pick"><select id="pickB" aria-label="Right-hand member"></select></label>
+        <span class="vs-sub" id="subB"></span>
+      </div>
+      <span class="vs-av" id="avB"></span>
+    </div>
+  </div>
+
+  <div class="vs-kind">
     <div class="segmented" id="kindSeg" role="group" aria-label="Movies or series">
       <button data-kind="movie" class="on">Movies</button>
       <button data-kind="series">Series</button>
@@ -59,8 +77,8 @@
 <div class="ctip" id="ctip" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=15"></script>
-<script src="db.js?v=15"></script>
-<script src="boot.js?v=15" data-list="none" data-scripts="core.js compare.js"></script>
+<script src="config.js?v=16"></script>
+<script src="db.js?v=16"></script>
+<script src="boot.js?v=16" data-list="none" data-scripts="core.js compare.js"></script>
 </body>
 </html>
